@@ -1,0 +1,34 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor folders
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# Dashboard local exports / sensitive data backups
+*_export.json
+*export*.json
+*backup*.json
+dashboard-data*.json
+weekly-data*.json
+
+# Generated reports
+*.doc
+*.pdf
+
+# Logs
+*.log
+
+# Node artifacts are not needed for this single-file dashboard
+node_modules/
+package-lock.json
+npm-debug.log*
