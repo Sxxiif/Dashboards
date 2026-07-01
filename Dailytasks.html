@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Operations Dashboard</title>
+<style>
+/* ============================================================
+   DESIGN SYSTEM — sleek dark + vivid accent, executive touches.
+   VDI-tuned: no backdrop blur, static subtle gradients, lean DOM.
+   ============================================================ */
+:root{
+  /* dark (default) */
+  --bg:#0a0e17;--bg-2:#0d121e;--elev:#121826;--elev-2:#161d2e;--elev-3:#1b2436;
+  --line:#222c40;--line-2:#2c3850;--line-soft:#1a2233;
+  --ink:#eef2fb;--ink-2:#a7b2c9;--ink-3:#6f7c97;--ink-4:#4a566e;
+  --accent:#4d8dff;--accent-2:#6aa1ff;--accent-deep:#2f6be0;--accent-soft:#15203a;
+  --gold:#e3b341;--gold-soft:#2a2412;
+  --grn:#2fcf8f;--grn-soft:#0f2c20;--amb:#e0a53a;--amb-soft:#2c2210;
+  --red:#fa5a6e;--red-soft:#2e1620;--cy:#37c6e0;--cy-soft:#0f2933;--vio:#9d83f5;--vio-soft:#1e1838;
+  --ring:rgba(77,141,255,.16);
+  --sh:0 1px 2px rgba(0,0,0,.4),0 2px 8px rgba(0,0,0,.28);
+  --sh-lg:0 18px 50px rgba(0,0,0,.5);
+  --r:14px;--r-sm:9px;--r-lg:20px;--r-xs:7px;
+  --sans:'Segoe UI',system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+  --mono:'Consolas','SF Mono',monospace;
+  --side-w:248px;
+}
+body.light{
+  --bg:#eef1f7;--bg-2:#f4f6fb;--elev:#ffffff;--elev-2:#f7f9fd;--elev-3:#eef2f8;
+  --line:#e2e7f0;--line-2:#d2d9e6;--line-soft:#edf0f6;
+  --ink:#101727;--ink-2:#46536e;--ink-3:#737f98;--ink-4:#a3adc0;
+  --accent:#2f6be0;--accent-2:#2257c4;--accent-deep:#1f4eb0;--accent-soft:#e8eefc;
+  --gold:#b8860b;--gold-soft:#f7eecd;
+  --grn:#12a567;--grn-soft:#e1f5ec;--amb:#b9740c;--amb-soft:#fbeed6;
+  --red:#dc3b54;--red-soft:#fbe6ea;--cy:#0e93b0;--cy-soft:#def0f5;--vio:#6f55c9;--vio-soft:#ece7f9;
+  --ring:rgba(47,107,224,.16);
+  --sh:0 1px 2px rgba(16,23,39,.05),0 2px 8px rgba(16,23,39,.06);
+  --sh-lg:0 18px 50px rgba(16,23,39,.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+/* subtle static ambient — cheap on GPU (no blur, no animation) */
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(900px 380px at 78% -8%, var(--accent-soft), transparent 70%);opacity:.6}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px}::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit;cursor:pointer;color:inherit}
+input,textarea,select{font-family:inherit;font-size:13.5px;color:var(--ink)}
+[dir="rtl"]{text-align:right}
+
+/* ===== SHELL: sidebar + main ===== */
+.shell{display:flex;min-height:100vh;position:relative;z-index:1}
+.side{width:var(--side-w);flex-shrink:0;background:linear-gradient(180deg,var(--bg-2),var(--bg));border-inline-end:1px solid var(--line);position:fixed;inset-block:0;inset-inline-start:0;display:flex;flex-direction:column;z-index:40}
+.side-brand{padding:20px 18px 16px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;gap:12px}
+.brand-mark{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--vio));display:grid;place-items:center;font-weight:900;font-size:17px;color:#fff;flex-shrink:0;box-shadow:0 8px 22px var(--ring)}
+.brand-mark img{width:100%;height:100%;object-fit:contain;border-radius:12px}
+.brand-tt{font-size:14.5px;font-weight:750;letter-spacing:-.2px;line-height:1.15}
+.brand-sub{font-size:9.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-3);margin-top:3px}
+.side-nav{flex:1;overflow-y:auto;padding:14px 12px}
+.nav-cap{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-4);padding:14px 12px 7px}
+.nav-link{display:flex;align-items:center;gap:11px;width:100%;padding:10px 12px;border:none;background:none;border-radius:10px;color:var(--ink-2);font-size:13.5px;font-weight:600;text-align:start;transition:background .13s,color .13s;margin-bottom:2px;position:relative}
+.nav-link:hover{background:var(--elev);color:var(--ink)}
+.nav-link.on{background:linear-gradient(100deg,var(--accent-soft),transparent);color:var(--accent)}
+.nav-link.on::before{content:'';position:absolute;inset-inline-start:0;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--accent)}
+.nav-ic{width:18px;height:18px;flex-shrink:0;display:grid;place-items:center}
+.nav-ic svg{width:17px;height:17px}
+.nav-num{margin-inline-start:auto;font-size:10px;font-weight:700;color:var(--ink-4);background:var(--elev-2);padding:1px 7px;border-radius:20px}
+.nav-link.on .nav-num{background:var(--accent);color:#fff}
+.side-foot{padding:14px 16px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--ink-4)}
+.side-foot b{color:var(--ink-3)}
+
+.main{flex:1;min-width:0;margin-inline-start:var(--side-w);display:flex;flex-direction:column}
+
+/* ===== TOP BAR ===== */
+.top{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);border-bottom:1px solid var(--line);padding:11px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.top-title{font-size:15px;font-weight:750;letter-spacing:-.2px;white-space:nowrap}
+.top-sp{flex:1}
+.week{display:flex;align-items:center;gap:3px;background:var(--elev);border:1px solid var(--line);border-radius:11px;padding:3px}
+.week button{width:30px;height:30px;border:none;background:none;border-radius:8px;color:var(--ink-2);display:grid;place-items:center}
+.week button:hover{background:var(--elev-3);color:var(--ink)}
+.week-lbl{font-size:12.5px;font-weight:700;min-width:158px;text-align:center;padding:0 6px}
+.ib{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;min-width:36px;padding:0 10px;border:1px solid var(--line);background:var(--elev);border-radius:10px;color:var(--ink-2);font-size:13px;font-weight:600;transition:.13s;white-space:nowrap}
+.ib:hover{border-color:var(--accent);color:var(--ink);box-shadow:0 0 0 3px var(--ring)}
+.ib svg{width:16px;height:16px}
+.ib.icon{padding:0;width:36px}
+.ib.gold{border-color:color-mix(in srgb,var(--gold) 45%,var(--line));color:var(--gold)}
+.ib.gold:hover{box-shadow:0 0 0 3px var(--gold-soft)}
+.ib.accent{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:#fff}
+.ib.accent:hover{box-shadow:0 6px 18px var(--ring)}
+.ib.sm{height:30px;font-size:12px;padding:0 9px;min-width:30px}
+.ib.sm.icon{width:30px;padding:0}
+.date-jump{height:36px;border:1px solid var(--line);background:var(--elev);border-radius:10px;padding:0 9px;color:var(--ink-2);font-size:12px;width:140px}
+
+/* ===== PAGE / SECTIONS ===== */
+.page{padding:22px;max-width:1500px;width:100%;margin:0 auto;flex:1}
+.crumb{display:flex;align-items:center;gap:9px;margin-bottom:16px;flex-wrap:wrap}
+.crumb h2{font-size:21px;font-weight:780;letter-spacing:-.4px}
+.crumb h2 input{border:1px solid transparent;background:none;font:inherit;font-weight:780;border-radius:8px;padding:3px 8px;min-width:220px;color:var(--ink)}
+.crumb h2 input:hover{background:var(--elev)}
+.crumb h2 input:focus{outline:none;background:var(--elev);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.muted{color:var(--ink-3)}.sp{flex:1}
+
+.card{background:var(--elev);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--line-soft)}
+.card-h .num{font-size:10px;font-weight:800;letter-spacing:.3px;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:7px;flex-shrink:0}
+.card-t{font-size:14px;font-weight:700;flex:1;min-width:0;letter-spacing:-.1px}
+.card-t input{border:1px solid transparent;background:none;font:inherit;font-weight:700;width:100%;border-radius:7px;padding:3px 7px;color:var(--ink)}
+.card-t input:hover{background:var(--elev-2)}
+.card-t input:focus{outline:none;background:var(--elev-2);border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.card-tools{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.card-b{padding:15px 16px}
+.card.collapsed .card-b{display:none}
+.card.collapsed .card-h{border-bottom:none}
+.tri{width:28px;height:28px;border:none;background:none;color:var(--ink-3);border-radius:7px;display:grid;place-items:center;font-size:11px;transition:.13s}
+.tri:hover{background:var(--elev-3);color:var(--ink)}
+.mini{width:30px;height:30px;border:1px solid var(--line);background:var(--elev-2);color:var(--ink-2);border-radius:8px;display:inline-grid;place-items:center;font-size:14px;transition:.13s;flex-shrink:0}
+.mini:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.mini.del:hover{border-color:var(--red);color:var(--red);box-shadow:0 0 0 3px var(--red-soft)}
+
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1180px){.g4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1024px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ===== STAT TILES ===== */
+.stat{background:linear-gradient(160deg,var(--elev-2),var(--elev));border:1px solid var(--line);border-radius:var(--r);padding:17px 18px;position:relative;overflow:hidden}
+.stat::after{content:'';position:absolute;inset-inline-end:-26px;top:-26px;width:80px;height:80px;border-radius:50%;background:var(--sc,var(--accent));opacity:.07}
+.stat .l{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-3)}
+.stat .v{font-size:30px;font-weight:820;letter-spacing:-1.2px;margin-top:7px;line-height:1}
+.stat .f{font-size:11.5px;color:var(--ink-3);margin-top:6px}
+
+/* ===== TABLE ===== */
+.tw{overflow-x:auto;border:1px solid var(--line-soft);border-radius:12px}
+.tbl{width:100%;border-collapse:collapse;table-layout:auto}
+.tbl th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3);text-align:start;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--elev-2);position:sticky;top:0;white-space:normal;line-height:1.25;vertical-align:middle}
+.tbl th .cx{margin-inline-start:5px;border:none;background:none;color:var(--ink-4);font-size:11px;opacity:0;transition:.1s}
+.tbl th:hover .cx{opacity:1}.tbl th .cx:hover{color:var(--red)}
+.tbl th input{border:none;background:none;font:inherit;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--ink-3);width:100%;min-width:50px;letter-spacing:.4px}
+.tbl th input:focus{outline:none;color:var(--accent)}
+.tbl td{padding:3px 5px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover{background:var(--elev-2)}
+.tbl tr.urg td{background:color-mix(in srgb,var(--red) 8%,transparent)}
+.ci{width:100%;border:1px solid transparent;background:none;padding:7px 8px;border-radius:8px;font-size:13px;transition:.1s;min-width:54px;color:var(--ink)}
+.ci:hover{background:var(--elev-3)}
+.ci:focus{outline:none;background:var(--elev);border-color:var(--accent);box-shadow:0 0 0 2px var(--ring)}
+textarea.ci{resize:none;overflow:hidden;line-height:1.45;white-space:pre-wrap}
+select.ci{cursor:pointer;min-width:96px}
+.ci.num{max-width:96px;text-align:center}
+select.ci,input[type=date].ci,input[type=date].date-jump,.date-jump{color-scheme:dark}
+body.light select.ci,body.light input[type=date]{color-scheme:light}
+select option{background:var(--elev-2);color:var(--ink)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7);cursor:pointer}
+body.light input[type=date]::-webkit-calendar-picker-indicator{filter:none}
+.rx{width:30px;height:30px;border:1px solid var(--line);background:var(--elev-2);color:var(--ink-4);border-radius:8px;font-size:14px;display:inline-grid;place-items:center;transition:.13s}
+.rx:hover{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+.act{width:48px;text-align:center}
+.addrow{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:8px 13px;border:1px dashed var(--line-2);border-radius:10px;color:var(--ink-3);font-size:12px;font-weight:650;background:none;transition:.13s}
+.addrow:hover{border-color:var(--accent);color:var(--accent)}
+.thadd{border:none;background:none;color:var(--ink-4);font-size:11px;font-weight:700}.thadd:hover{color:var(--accent)}
+
+/* ===== CHIPS ===== */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.dotind{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.dot-grn{background:var(--grn);color:var(--grn)}.dot-amb{background:var(--amb);color:var(--amb)}.dot-red{background:var(--red);color:var(--red)}
+.sev-low,.cx-low{background:var(--elev-3);color:var(--ink-2)}
+.sev-medium,.cx-medium{background:var(--cy-soft);color:var(--cy)}
+.sev-high,.cx-high{background:var(--amb-soft);color:var(--amb)}
+.sev-critical,.cx-critical{background:var(--red-soft);color:var(--red)}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;font-size:11.5px;font-weight:700;border:1px solid var(--line)}
+.b-good{background:var(--grn-soft);color:var(--grn);border-color:color-mix(in srgb,var(--grn) 30%,transparent)}
+.b-warn{background:var(--amb-soft);color:var(--amb);border-color:color-mix(in srgb,var(--amb) 30%,transparent)}
+.b-bad{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 30%,transparent)}
+
+/* ===== DAILY TASKS ===== */
+.days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:11px}
+@media(max-width:1280px){.days{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:880px){.days{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.days{grid-template-columns:1fr}}
+.day{background:var(--elev-2);border:1px solid var(--line-soft);border-radius:12px;display:flex;flex-direction:column;min-height:130px}
+.day.today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.day-h{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid var(--line-soft)}
+.day-h .nm{font-size:11.5px;font-weight:750;text-transform:uppercase;letter-spacing:.4px}
+.day-h .ct{font-size:10px;color:var(--ink-4);font-weight:600}
+.day-b{padding:8px;display:flex;flex-direction:column;gap:7px;flex:1}
+.entry{background:var(--elev);border:1px solid var(--line-soft);border-radius:9px;padding:8px 9px;display:flex;gap:7px;align-items:flex-start}
+.entry .ts{font-size:9.5px;color:var(--ink-4);font-family:var(--mono);white-space:nowrap;padding-top:6px}
+.entry textarea{flex:1;border:none;background:none;resize:none;overflow:hidden;font-size:12.5px;line-height:1.5;padding:3px 1px;color:var(--ink);min-height:22px}
+.entry textarea:focus{outline:none}
+.day-add{margin:0 8px 8px;padding:6px;border:1px dashed var(--line-2);border-radius:8px;color:var(--ink-4);font-size:11.5px;font-weight:600;background:none}
+.day-add:hover{border-color:var(--accent);color:var(--accent)}
+
+/* concerns */
+.concern{display:flex;align-items:center;gap:9px;border-radius:9px;padding:7px 11px;margin-bottom:7px;background:linear-gradient(90deg,var(--amb-soft),transparent);border:1px solid color-mix(in srgb,var(--amb) 32%,transparent);border-inline-start:3px solid var(--amb)}
+.concern .ts{font-size:10px;color:var(--amb);font-weight:700;font-family:var(--mono);white-space:nowrap}
+.concern input{flex:1;border:none;background:none;font-size:12.5px;font-weight:550;color:var(--ink)}
+.concern input:focus{outline:none}
+
+/* list / bullets */
+.li{display:flex;align-items:flex-start;gap:9px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+.li:last-child{border-bottom:none}
+.li .bul{color:var(--accent);font-weight:800;padding-top:6px}
+.li textarea{flex:1;border:1px solid transparent;background:none;resize:none;overflow:hidden;font-size:13px;line-height:1.5;padding:5px 8px;border-radius:8px;color:var(--ink)}
+.li textarea:hover{background:var(--elev-3)}
+.li textarea:focus{outline:none;background:var(--elev);border-color:var(--accent)}
+
+/* status toggle (team3) */
+.stitem{display:flex;align-items:center;gap:11px;padding:9px 12px;border:1px solid var(--line-soft);border-radius:11px;margin-bottom:8px;background:var(--elev-2)}
+.stlight{width:20px;height:20px;border-radius:50%;flex-shrink:0;cursor:pointer;transition:.13s;border:2px solid transparent}
+.stlight.green{background:var(--grn);box-shadow:0 0 12px color-mix(in srgb,var(--grn) 60%,transparent)}
+.stlight.yellow{background:var(--amb);box-shadow:0 0 12px color-mix(in srgb,var(--amb) 60%,transparent)}
+.stlight.red{background:var(--red);box-shadow:0 0 12px color-mix(in srgb,var(--red) 60%,transparent)}
+.stlight:hover{transform:scale(1.15)}
+.stname{flex:1;border:1px solid transparent;background:none;border-radius:8px;padding:6px 8px;font-size:13px;font-weight:550;color:var(--ink)}
+.stname:hover{background:var(--elev-3)}.stname:focus{outline:none;background:var(--elev);border-color:var(--accent)}
+
+/* personnel */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:12px}
+.pcard{background:linear-gradient(160deg,var(--elev-2),var(--elev));border:1px solid var(--line);border-radius:14px;padding:14px;position:relative}
+.pcard .av{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--vio));color:#fff;display:grid;place-items:center;font-weight:800;font-size:16px;margin-bottom:11px;box-shadow:0 6px 16px var(--ring)}
+.pcard .pn{font-size:14px;font-weight:750;letter-spacing:-.1px}
+.pcard .pr{font-size:12px;color:var(--ink-2);margin-top:1px}
+.pcard .pi{font-size:10.5px;color:var(--ink-4);font-family:var(--mono);margin-top:4px}
+.pcard .rx{position:absolute;top:9px;inset-inline-end:9px;width:26px;height:26px}
+
+/* ===== CHARTS ===== */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--elev-2)}
+.seg button{padding:6px 11px;border:none;background:none;font-size:11.5px;font-weight:650;color:var(--ink-2);border-inline-end:1px solid var(--line)}
+.seg button:last-child{border-inline-end:none}
+.seg button.on{background:var(--accent);color:#fff}
+.chart-host{padding:6px 2px}
+.chart-host svg{width:100%;height:auto;display:block}
+.chart-empty{text-align:center;padding:34px 16px;color:var(--ink-3);font-size:13px;border:1px dashed var(--line-2);border-radius:12px}
+
+/* home */
+.hero{border:1px solid var(--line);border-radius:var(--r-lg);padding:30px 32px;margin-bottom:20px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--elev-2),var(--elev)),radial-gradient(600px 240px at 88% -10%,var(--accent-soft),transparent)}
+.hero::after{content:'';position:absolute;inset-block:0;inset-inline-end:0;width:4px;background:linear-gradient(180deg,var(--accent),var(--vio))}
+.hero h1{font-size:27px;font-weight:820;letter-spacing:-.7px;line-height:1.1;max-width:680px}
+.hero p{font-size:14px;color:var(--ink-2);margin-top:11px;max-width:620px}
+.hero .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.tag{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:20px;border:1px solid var(--line);background:var(--elev);font-size:12px;font-weight:600;color:var(--ink-2)}
+.tag .d{width:7px;height:7px;border-radius:50%;background:var(--grn);box-shadow:0 0 8px var(--grn)}
+.home-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:1180px){.home-cards{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.home-cards{grid-template-columns:1fr}}
+.hcard{background:var(--elev);border:1px solid var(--line);border-radius:var(--r);padding:20px;cursor:pointer;transition:transform .15s,border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
+.hcard:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--sh-lg)}
+.hcard .hic{width:44px;height:44px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.hcard .hic svg{width:22px;height:22px}
+.hcard h3{font-size:16px;font-weight:750}
+.hcard p{font-size:12px;color:var(--ink-3);margin-top:5px;line-height:1.5}
+.hcard .arrow{position:absolute;top:20px;inset-inline-end:18px;color:var(--ink-4);transition:.15s}
+.hcard:hover .arrow{color:var(--accent);transform:translateX(3px)}
+.hcard .pct{position:absolute;bottom:18px;inset-inline-end:18px;font-size:22px;font-weight:820;color:var(--accent);letter-spacing:-1px}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(5,8,15,.66);display:none;align-items:center;justify-content:center;z-index:200;padding:24px}
+.scrim.on{display:flex}
+.modal{background:var(--elev);border:1px solid var(--line-2);border-radius:var(--r-lg);width:100%;max-width:860px;max-height:90vh;overflow:auto;box-shadow:var(--sh-lg)}
+.modal.sm{max-width:430px}
+.modal-h{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line-soft);font-size:15px;font-weight:750}
+.modal-b{padding:18px 20px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-3);margin-bottom:6px}
+.fld input,.fld select{width:100%;border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;background:var(--elev-2)}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+.row-f{display:flex;gap:10px}.row-f>*{flex:1}
+.notes{width:100%;border:1px solid var(--line-soft);border-radius:12px;padding:13px 14px;font-size:13.5px;line-height:1.6;resize:vertical;min-height:90px;background:var(--elev-2);color:var(--ink)}
+.notes:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
+
+.empty{text-align:center;padding:24px 16px;color:var(--ink-3)}
+.empty-h{font-size:13px;font-weight:650;color:var(--ink-2);margin-bottom:3px}
+.toast{position:fixed;bottom:24px;inset-inline-start:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:700;box-shadow:var(--sh-lg);opacity:0;transition:.3s;z-index:400;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+
+/* mobile: collapse sidebar */
+@media(max-width:900px){
+  .side{transform:translateX(-100%);transition:transform .2s}
+  .side.open{transform:none}
+  .main{margin-inline-start:0}
+  .menu-btn{display:inline-grid!important}
+}
+.menu-btn{display:none}
+
+@media print{
+  .side,.top,.no-print,.tri,.mini,.rx,.addrow,.thadd,.seg,.day-add{display:none!important}
+  .main{margin:0}
+  body{background:#fff;color:#000}body::before{display:none}
+  .page{padding:0;max-width:100%}
+  .card{box-shadow:none;border-color:#ccc;break-inside:avoid}
+  .card.collapsed .card-b{display:block!important}
+}
+
+/* alias: legacy .statbox markup -> premium stat tile */
+.statbox{background:linear-gradient(160deg,var(--elev-2),var(--elev));border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;text-align:center;position:relative;overflow:hidden}
+.statbox .v{font-size:28px;font-weight:820;letter-spacing:-1.1px;color:var(--accent);line-height:1}
+.statbox .l{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="shell">
+  <!-- SIDEBAR -->
+  <aside class="side" id="side">
+    <div class="side-brand">
+      <div class="brand-mark" id="brandLogo">W</div>
+      <div style="min-width:0">
+        <div class="brand-tt" data-i18n="appTitle">Weekly Operations</div>
+        <div class="brand-sub" data-i18n="appSub">Offline · VDI-ready</div>
+      </div>
+    </div>
+    <nav class="side-nav" id="navBar"></nav>
+    <div class="side-foot"><span data-i18n="builtBy">Built by</span> <b>sxxiif</b></div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="top">
+      <button class="ib icon menu-btn" onclick="document.getElementById('side').classList.toggle('open')" title="Menu">☰</button>
+      <div class="top-title" id="topTitle">Home</div>
+      <div class="top-sp"></div>
+      <div class="week no-print">
+        <button onclick="shiftWeek(-1)" title="Previous week">‹</button>
+        <span class="week-lbl" id="weekLbl">—</span>
+        <button onclick="shiftWeek(1)" title="Next week">›</button>
+      </div>
+      <input type="date" id="weekPick" class="date-jump no-print" onchange="jumpWeek(this.value)" title="Jump to week">
+      <button class="ib sm no-print" onclick="thisWeek()" data-i18n="today">Today</button>
+      <button class="ib sm icon no-print" id="themeBtn" onclick="toggleTheme()" title="Theme">🌙</button>
+      <button class="ib sm no-print" id="langBtn" onclick="toggleLang()" title="Language">EN</button>
+      <button class="ib sm icon no-print" onclick="exportJSON()" title="Export JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg></button>
+      <button class="ib sm icon no-print" onclick="document.getElementById('importFile').click()" title="Import JSON"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21V8m0 0l-4 4m4-4l4 4M5 3h14"/></svg></button>
+      <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJSON(this)">
+      <button class="ib sm gold no-print" onclick="exportWord()" title="Export Word">Word</button>
+      <button class="ib sm icon no-print" onclick="window.print()" title="Print / PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg></button>
+    </header>
+
+    <div class="page" id="app"></div>
+  </div>
+</div>
+
+<!-- generic modal -->
+<div class="scrim" id="modal">
+  <div class="modal" id="modalBox">
+    <div class="modal-h"><span id="modalTitle">Title</span><div class="sp"></div><button class="tri" onclick="closeModal()" style="font-size:17px">✕</button></div>
+    <div class="modal-b" id="modalBody"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* =========================================================================
+   WEEKLY OPERATIONS DASHBOARD — core (single-file, offline, vanilla JS)
+   ========================================================================= */
+
+/* ---------- i18n ---------- */
+const I18N={
+  en:{appTitle:"Weekly Operations Dashboard",appSub:"Offline · Secure · VDI-ready",today:"Today",builtBy:"Built by",
+    home:"Home",teamsCap:"Teams",overview:"Overview",prevWeek:"Previous week",nextWeek:"Next week",theme:"Theme",exportJson:"Export JSON",importJson:"Import JSON",exportWord:"Export Word",print:"Print / Save PDF",
+    welcome:"Welcome",heroSub:"Your offline weekly operations hub. Pick a team to log work, or open the Overview for the executive summary. Everything saves automatically on this device.",
+    openTeam:"Open team",viewOverview:"View overview",completion:"completion",
+    dailyTasks:"Daily Tasks",concerns:"Concerns",systemsActivity:"Systems / Machines Activity",tasksSummary:"Tasks Summary",
+    tasksReceived:"Tasks Received This Week",ongoing:"Total Ongoing Tasks This Week",urgentTasks:"Urgent Tasks",recoveredSystems:"Recovered Systems",
+    systemsOutcomes:"Systems Outcomes",jira:"Jira Dashboard",risks:"Risks / Blockers",tna:"TNA",personnel:"Personnel",
+    requestedTasks:"Requested Tasks",statistics:"Statistics",results:"Results",systemGraph:"System Graph",internalTasks:"Internal Task Table",
+    operations:"Operations / Status",logMaint:"Log / Maintenance",nameOps:"Operations Requests",
+    addRow:"Add row",addEntry:"Add entry",addItem:"Add item",addCol:"Add column",addPerson:"Add person",
+    severity:"Severity",status:"Status",complexity:"Complexity",urgent:"Urgent",progress:"Progress",owner:"Owner",deadline:"Deadline",
+    name:"Name",role:"Role",id:"ID",notes:"Notes",date:"Date",description:"Description",count:"Count",total:"Total",
+    chartType:"Chart type",refresh:"Refresh",bigger:"Enlarge",noData:"No data yet — add rows to see this chart.",
+    teamNames:"Team names",save:"Save",cancel:"Cancel",delete:"Delete",
+    active:"Active",inactive:"Inactive",pending:"Pending",completed:"Completed",done:"Done",received:"Received",recovered:"Recovered",analyzed:"Analyzed",
+    quickLinks:"Quick links",execSummary:"Executive summary, read-only.",weekOf:"Week of"},
+  ar:{appTitle:"لوحة العمليات الأسبوعية",appSub:"دون اتصال · آمن · جاهز لبيئة VDI",today:"اليوم",builtBy:"تم الإنشاء بواسطة",
+    home:"الرئيسية",teamsCap:"الفرق",overview:"نظرة عامة",prevWeek:"الأسبوع السابق",nextWeek:"الأسبوع التالي",theme:"المظهر",exportJson:"تصدير JSON",importJson:"استيراد JSON",exportWord:"تصدير Word",print:"طباعة / حفظ PDF",
+    welcome:"مرحباً",heroSub:"مركز العمليات الأسبوعية دون اتصال. اختر فريقاً لتسجيل العمل، أو افتح النظرة العامة للملخص التنفيذي. يتم الحفظ تلقائياً على هذا الجهاز.",
+    openTeam:"فتح الفريق",viewOverview:"عرض النظرة العامة",completion:"الإنجاز",
+    dailyTasks:"المهام اليومية",concerns:"الملاحظات",systemsActivity:"نشاط الأنظمة / الأجهزة",tasksSummary:"ملخص المهام",
+    tasksReceived:"المهام المستلمة هذا الأسبوع",ongoing:"إجمالي المهام الجارية هذا الأسبوع",urgentTasks:"المهام العاجلة",recoveredSystems:"الأنظمة المستعادة",
+    systemsOutcomes:"نتائج الأنظمة",jira:"لوحة Jira",risks:"المخاطر / المعوقات",tna:"TNA",personnel:"الموظفون",
+    requestedTasks:"المهام المطلوبة",statistics:"الإحصائيات",results:"النتائج",systemGraph:"رسم الأنظمة",internalTasks:"جدول المهام الداخلية",
+    operations:"العمليات / الحالة",logMaint:"السجل / الصيانة",nameOps:"طلبات العمليات",
+    addRow:"إضافة صف",addEntry:"إضافة إدخال",addItem:"إضافة عنصر",addCol:"إضافة عمود",addPerson:"إضافة شخص",
+    severity:"الخطورة",status:"الحالة",complexity:"التعقيد",urgent:"عاجل",progress:"التقدم",owner:"المسؤول",deadline:"الموعد النهائي",
+    name:"الاسم",role:"الدور",id:"المعرف",notes:"ملاحظات",date:"التاريخ",description:"الوصف",count:"العدد",total:"الإجمالي",
+    chartType:"نوع الرسم",refresh:"تحديث",bigger:"تكبير",noData:"لا توجد بيانات بعد — أضف صفوفاً لعرض الرسم.",
+    teamNames:"أسماء الفرق",save:"حفظ",cancel:"إلغاء",delete:"حذف",
+    active:"نشط",inactive:"غير نشط",pending:"معلق",completed:"مكتمل",done:"منجز",received:"مستلم",recovered:"مستعاد",analyzed:"تم تحليله",
+    quickLinks:"روابط سريعة",execSummary:"ملخص تنفيذي للقراءة فقط.",weekOf:"أسبوع"}
+};
+function t(k){const d=I18N[DB.lang]||I18N.en;return d[k]!=null?d[k]:(I18N.en[k]||k);}
+
+/* dropdown option sets (values are stable keys; labels translated) */
+const OPT={
+  severity:["Low","Medium","High","Critical"],
+  status:["Not Started","In Progress","Pending","Completed","Blocked","Done"],
+  complexity:["Low","Medium","High","Critical"],
+  urgent:["Yes","No"]
+};
+
+/* ---------- date / week ---------- */
+function startOfWeek(d){const x=new Date(d);x.setDate(x.getDate()-x.getDay());x.setHours(0,0,0,0);return x;}
+function weekKey(d){const s=startOfWeek(d);return s.getFullYear()+'-'+String(s.getMonth()+1).padStart(2,'0')+'-'+String(s.getDate()).padStart(2,'0');}
+function weekLabel(k){const s=new Date(k+'T00:00:00');const e=new Date(s);e.setDate(e.getDate()+6);const loc=DB.lang==='ar'?'ar-EG':'en-US';const f=d=>d.toLocaleDateString(loc,{month:'short',day:'numeric'});return f(s)+' – '+f(e)+', '+e.getFullYear();}
+const DAYKEYS=['sun','mon','tue','wed','thu','fri','sat'];
+function dayName(i){const loc=DB.lang==='ar'?'ar-EG':'en-US';const d=new Date(2024,0,7+i);return d.toLocaleDateString(loc,{weekday:'long'});}
+
+/* ---------- state ---------- */
+let DB=null, view='home', curWeek=weekKey(new Date());
+const LS='wopsdash_v1';
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+
+function seed(){
+  return {
+    lang:'en', theme:'dark',
+    teamNames:{t1:'Team 1', t2:'Team 2', t3:'Team 3'},
+    collapse:{},
+    weeks:{}
+  };
+}
+/* a fresh week template */
+function blankWeek(){
+  return {
+    t1:{ daily:dailyInit(), concerns:[], systems:[],
+         tasksRecv:emptyTable(['Date','Ref Number','Case Name','Total Received','Total Recovered','Complexity','Urgent','Saif Created','Progress %','Result Progress %']),
+         ongoing:[],
+         urgent:emptyTable(['Task','Deadline','Owner','Status','Progress %']),
+         recovered:emptyTable(['System','Detail','Date']),
+         outcomes:[], jira:[], risks:emptyTable(['Risk / Blocker','Severity','Status']), tna:emptyTable(['ID Manual','Date of Entry','Total Requests','Status','Comment']), personnel:[],
+         chTasks:'bar', chJira:'bar' },
+    t2:{ daily:dailyInit(), requested:emptyTable(['Task Name','Start Date','End Date','Ref Number','Requested From','Input 1','Input 2']),
+         statsLabels:{i1:'Input 1',i2:'Input 2'}, stats:[], resultsTitle:'Results', results:[], sysTitle:'System Graph', sysGraph:[],
+         internal:emptyTable(['Task Name','Tool Used','Total','Comments']),
+         risks:emptyTable(['Risk / Blocker','Severity','Status']), tna:emptyTable(['ID Manual','Date of Entry','Total Requests','Status','Comment']), personnel:[],
+         chStats:'bar', chResults:'hbar', chSys:'bar' },
+    t3:{ daily:dailyInit(), dailyList:[], opsTitle:'Operations - Status', grp1Name:'Group A', grp1:[], grp2Name:'Group B', grp2:[],
+         logTitle:'Log / Maintenance', logTable:emptyTable(['Ref #','Description','Status','Owner']), bullets:[], maintenance:[],
+         atm:emptyTable(['Total Requests','Done','Sent to Team','Pending']), requests:emptyTable(['Total Requests','Done','Pending','Assigned To']),
+         risks:emptyTable(['Risk / Blocker','Severity','Status']), tna:emptyTable(['ID Manual','Date of Entry','Total Requests','Status','Comment']), personnel:[] }
+  };
+}
+function dailyInit(){const o={};DAYKEYS.forEach(d=>o[d]=[]);return o;}
+function emptyTable(cols){return {cols:cols.slice(), rows:[]};}
+
+/* get current week's data, creating if needed */
+function wk(){ if(!DB.weeks[curWeek]) DB.weeks[curWeek]=blankWeek(); ensureWeekShape(DB.weeks[curWeek]); return DB.weeks[curWeek]; }
+function ensureWeekShape(w){
+  const tpl=blankWeek();
+  ['t1','t2','t3'].forEach(tid=>{
+    if(!w[tid])w[tid]=tpl[tid];
+    const d=w[tid], def=tpl[tid];
+    for(const k in def){ if(d[k]===undefined) d[k]=def[k]; }
+    // ensure table-shaped fields really have cols/rows
+    ['tasksRecv','tna','requested','internal','logTable','atm','requests','risks'].forEach(tk=>{
+      if(d[tk]&&(!d[tk].cols||!d[tk].rows)){ if(def[tk]) d[tk]=def[tk]; }
+    });
+    if(!d.daily)d.daily=dailyInit();
+    if(tid==='t3'&&!Array.isArray(d.dailyList))d.dailyList=[];
+  });
+}
+function td(teamId){ return wk()[teamId]; }   // team data for current week
+
+/* ---------- persistence ---------- */
+function load(){try{const r=localStorage.getItem(LS);if(r){DB=JSON.parse(r);migrate();return;}}catch(e){}DB=seed();}
+function migrate(){ if(!DB.weeks)DB.weeks={}; if(!DB.teamNames)DB.teamNames={t1:'Team 1',t2:'Team 2',t3:'Team 3'}; if(!DB.collapse)DB.collapse={}; if(!DB.lang)DB.lang='en'; if(!DB.theme)DB.theme='light'; }
+let saveTimer=null;
+function save(){ try{localStorage.setItem(LS,JSON.stringify(DB));}catch(e){} }
+function saveSoon(){ clearTimeout(saveTimer); saveTimer=setTimeout(save,250); }
+
+/* ---------- theme / lang ---------- */
+function applyTheme(){document.body.classList.toggle('light',DB.theme==='light');const b=document.getElementById('themeBtn');if(b)b.textContent=DB.theme==='light'?'☀':'🌙';}
+function toggleTheme(){DB.theme=DB.theme==='dark'?'light':'dark';applyTheme();save();}
+function applyLang(){const html=document.documentElement;html.lang=DB.lang;html.dir=DB.lang==='ar'?'rtl':'ltr';const b=document.getElementById('langBtn');if(b)b.textContent=DB.lang==='ar'?'AR':'EN';document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.getAttribute('data-i18n'));});}
+function toggleLang(){DB.lang=DB.lang==='ar'?'en':'ar';applyLang();save();render();}
+
+/* ---------- week nav ---------- */
+function shiftWeek(n){const d=new Date(curWeek+'T00:00:00');d.setDate(d.getDate()+n*7);curWeek=weekKey(d);refreshWeekUI();render();}
+function thisWeek(){curWeek=weekKey(new Date());refreshWeekUI();render();}
+function jumpWeek(v){if(!v)return;curWeek=weekKey(new Date(v+'T00:00:00'));refreshWeekUI();render();}
+function refreshWeekUI(){const l=document.getElementById('weekLbl');if(l)l.textContent=weekLabel(curWeek);const p=document.getElementById('weekPick');if(p)p.value=curWeek;}
+
+/* ---------- misc ui ---------- */
+function toast(m){const el=document.getElementById('toast');el.textContent=m;el.classList.add('on');clearTimeout(el._h);el._h=setTimeout(()=>el.classList.remove('on'),2200);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+function openModal(title,html,small){document.getElementById('modalTitle').textContent=title;document.getElementById('modalBody').innerHTML=html;document.getElementById('modalBox').classList.toggle('sm',!!small);document.getElementById('modal').classList.add('on');}
+</script>
+<script>
+/* =========================================================================
+   REUSABLE ENGINES — collapse, tables, daily tasks, lists, personnel
+   Critical rule: typing in inputs must NOT re-render the table (focus loss).
+   We mutate the data object directly on input, save (debounced), and only
+   re-render dependent CHARTS on blur. Structural changes (add/del row/col)
+   do re-render that one section.
+   ========================================================================= */
+
+/* ---- collapse-aware card ---- */
+function card(key,titleHTML,bodyHTML,tools){
+  const col=!!DB.collapse[key];
+  return `<div class="card ${col?'collapsed':''}" id="card_${key}">
+    <div class="card-h">
+      <button class="tri" onclick="toggleCollapse('${key}')" title="Collapse">${col?'▸':'▾'}</button>
+      <div class="card-t">${titleHTML}</div>
+      <div class="card-tools">${tools||''}</div>
+    </div>
+    <div class="card-b">${bodyHTML}</div>
+  </div>`;
+}
+function toggleCollapse(key){DB.collapse[key]=!DB.collapse[key];save();const c=document.getElementById('card_'+key);if(c){c.classList.toggle('collapsed');const tri=c.querySelector('.tri');if(tri)tri.textContent=c.classList.contains('collapsed')?'▸':'▾';}}
+
+/* ---- generic editable table ----
+   spec: { get:()=>rowsObj {cols,rows}, path info via cb, dropdowns:{colName:optKey},
+           nums:[colNames], allowCols:true, onChange:fn, id }
+   We pass a "ref" = the {cols,rows} object itself (mutated in place).
+*/
+function tableHTML(ref,opt){
+  opt=opt||{};
+  const drop=opt.dropdowns||{}; const nums=opt.nums||[]; const allowCols=opt.allowCols!==false;
+  const id=opt.id||uid();
+  let h=`<div class="tw"><table class="tbl" id="tbl_${id}"><thead><tr>`;
+  ref.cols.forEach((c,ci)=>{
+    const renamable=opt.fixedCols?!opt.fixedCols.includes(c):true;
+    h+=`<th>${renamable&&allowCols?`<input value="${esc(c)}" onchange="tblRenameCol('${id}',${ci},this.value)">`:esc(c)}${(allowCols&&renamable)?`<button class="cx" title="Delete column" onclick="tblDelCol('${id}',${ci})">✕</button>`:''}</th>`;
+  });
+  h+=`<th style="width:34px"></th></tr></thead><tbody>`;
+  ref.rows.forEach((row,ri)=>{
+    h+=`<tr>`;
+    ref.cols.forEach((c,ci)=>{
+      const v=row[ci]==null?'':row[ci];
+      if(drop[c]){
+        h+=`<td>${selectCell(drop[c],v,`tblSet('${id}',${ri},${ci},this.value)`,c)}</td>`;
+      }else if(nums.includes(c)){
+        h+=`<td><input class="ci num" inputmode="decimal" value="${esc(v)}" oninput="tblSetLive('${id}',${ri},${ci},this.value)" onblur="tblBlur('${id}')"></td>`;
+      }else{
+        h+=`<td><textarea class="ci" rows="1" oninput="autoGrow(this);tblSetLive('${id}',${ri},${ci},this.value)" onblur="tblBlur('${id}')">${esc(v)}</textarea></td>`;
+      }
+    });
+    h+=`<td><button class="rx" title="Delete" onclick="tblDelRow('${id}',${ri})">🗑</button></td></tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  if(!ref.rows.length)h+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=`<button class="addrow" onclick="tblAddRow('${id}')">+ ${t('addRow')}</button>`;
+  if(allowCols)h+=`<button class="addrow" style="margin-inline-start:8px" onclick="tblAddCol('${id}')">+ ${t('addCol')}</button>`;
+  TBLREG[id]={ref,opt};
+  return h;
+}
+const TBLREG={};
+function selectCell(optKey,val,handler,col){
+  const opts=OPT[optKey]||[];
+  let h=`<select class="ci" onchange="${handler}">`;
+  h+=`<option value="">—</option>`;
+  opts.forEach(o=>{h+=`<option value="${esc(o)}" ${o===val?'selected':''}>${esc(optLabel(o))}</option>`;});
+  h+=`</select>`;
+  return h;
+}
+function optLabel(o){const map={"Low":"severity","Medium":"","High":"","Critical":"","Not Started":"","In Progress":"","Pending":"pending","Completed":"completed","Blocked":"","Done":"done","Yes":"","No":""};return o;} // keep option text as-is (stable, professional)
+
+/* table mutations */
+function tblSetLive(id,ri,ci,v){const e=TBLREG[id];if(!e)return;e.ref.rows[ri][ci]=v;saveSoon();}
+function tblBlur(id){const e=TBLREG[id];if(e&&e.opt.onChange)e.opt.onChange();}
+function tblSet(id,ri,ci,v){const e=TBLREG[id];if(!e)return;e.ref.rows[ri][ci]=v;save();if(e.opt.onChange)e.opt.onChange();if(e.opt.rerenderOnSelect)render();}
+function tblAddRow(id){const e=TBLREG[id];if(!e)return;e.ref.rows.push(e.ref.cols.map(()=>''));save();reRenderTable(id);if(e.opt.onChange)e.opt.onChange();}
+function tblDelRow(id,ri){const e=TBLREG[id];if(!e)return;e.ref.rows.splice(ri,1);save();reRenderTable(id);if(e.opt.onChange)e.opt.onChange();}
+function tblAddCol(id){const e=TBLREG[id];if(!e)return;const n=prompt(t('addCol')+':','Column');if(n==null||!n.trim())return;e.ref.cols.push(n.trim());e.ref.rows.forEach(r=>r.push(''));save();reRenderTable(id);if(e.opt.onChange)e.opt.onChange();}
+function tblDelCol(id,ci){const e=TBLREG[id];if(!e)return;if(e.ref.cols.length<=1){toast('Keep at least one column');return;}e.ref.cols.splice(ci,1);e.ref.rows.forEach(r=>r.splice(ci,1));save();reRenderTable(id);if(e.opt.onChange)e.opt.onChange();}
+function tblRenameCol(id,ci,v){const e=TBLREG[id];if(!e)return;e.ref.cols[ci]=v;save();if(e.opt.onChange)e.opt.onChange();}
+function reRenderTable(id){const e=TBLREG[id];if(!e)return;const old=document.getElementById('tbl_'+id);if(!old)return;const wrap=old.closest('.tw').parentNode;
+  // rebuild just this table block
+  const tmp=document.createElement('div');tmp.innerHTML=tableHTML(e.ref,e.opt);
+  // replace the .tw and following add buttons: easiest is to re-render whole section
+  render();
+}
+function autoGrow(ta){ta.style.height='auto';ta.style.height=(ta.scrollHeight)+'px';}
+
+/* ---- daily tasks engine ---- */
+function dailyHTML(teamId,paragraph){
+  const d=td(teamId).daily;
+  let h='';
+  DAYKEYS.forEach((dk,i)=>{
+    const entries=d[dk]||[];
+    h+=`<div class="day"><div class="day-h"><span>${dayName(i)}</span><span class="cnt">${entries.length}</span><div class="sp"></div><button class="mini" title="${t('addEntry')}" onclick="dailyAdd('${teamId}','${dk}')">+</button></div>`;
+    if(entries.length){h+=`<div class="day-b">`;
+      entries.forEach((en,ei)=>{
+        h+=`<div class="entry"><span class="ts">${esc(en.ts)}</span><textarea rows="1" placeholder="${paragraph?'…':'—'}" oninput="autoGrow(this);dailySet('${teamId}','${dk}',${ei},this.value)" onblur="saveSoon()">${esc(en.text)}</textarea><button class="rx" title="${t('delete')}" onclick="dailyDel('${teamId}','${dk}',${ei})">🗑</button></div>`;
+      });
+      h+=`</div>`;}
+  });
+  return h;
+}
+function dailyAdd(teamId,dk){const d=td(teamId).daily;if(!d[dk])d[dk]=[];const now=new Date();d[dk].push({ts:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'),text:''});save();render();}
+function dailySet(teamId,dk,ei,v){td(teamId).daily[dk][ei].text=v;saveSoon();}
+function dailyDel(teamId,dk,ei){td(teamId).daily[dk].splice(ei,1);save();render();}
+
+/* ---- flat daily list (for teams doing the same work daily, not by weekday) ---- */
+function dailyListHTML(teamId){
+  const list=td(teamId).dailyList||[];
+  let h=`<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button class="mini" title="${t('addEntry')}" onclick="dailyListAdd('${teamId}')" style="width:auto;padding:7px 13px;font-weight:650;font-size:12.5px">+ ${t('addEntry')}</button></div>`;
+  if(!list.length){h+=`<div class="empty"><div class="empty-h">—</div></div>`;return h;}
+  list.forEach((en,i)=>{
+    h+=`<div class="entry" style="align-items:flex-start;margin-bottom:8px"><span class="ts" style="min-width:96px">${esc(en.stamp||en.ts||'')}</span><textarea rows="1" placeholder="What was done…" oninput="autoGrow(this);dailyListSet('${teamId}',${i},this.value)" onblur="saveSoon()">${esc(en.text)}</textarea><button class="rx" title="${t('delete')}" onclick="dailyListDel('${teamId}',${i})">🗑</button></div>`;
+  });
+  return h;
+}
+function stampNow(){const n=new Date();const dd=n.toLocaleDateString(DB.lang==='ar'?'ar-EG':'en-US',{day:'2-digit',month:'short'});const tt=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');return dd+' · '+tt;}
+function dailyListAdd(teamId){const d=td(teamId);if(!d.dailyList)d.dailyList=[];d.dailyList.unshift({stamp:stampNow(),text:''});save();render();}
+function dailyListSet(teamId,i,v){td(teamId).dailyList[i].text=v;saveSoon();}
+function dailyListDel(teamId,i){td(teamId).dailyList.splice(i,1);save();render();}
+
+/* ---- generic list (concerns, bullets, ongoing, urgent, maintenance) ---- */
+function listAdd(arr,obj){arr.push(obj);save();render();}
+function listDel(arr,i){arr.splice(i,1);save();render();}
+
+/* ---- personnel cards ---- */
+function personnelHTML(teamId){
+  const p=td(teamId).personnel;
+  let h=`<div class="pcards">`;
+  p.forEach((per,i)=>{
+    const ini=((per.first||'').charAt(0)+(per.last||'').charAt(0)).toUpperCase()||'?';
+    h+=`<div class="pcard"><div class="av">${esc(ini)}</div><div style="min-width:0"><div class="pn">${esc(per.first)} ${esc(per.last)}</div><div class="pr">${esc(per.role||'')}</div><div class="pi">${esc(per.id||'')}</div></div><button class="rx" title="${t('delete')}" onclick="personDel('${teamId}',${i})">🗑</button></div>`;
+  });
+  h+=`</div>`;
+  if(!p.length)h+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=`<button class="addrow" onclick="personForm('${teamId}')">+ ${t('addPerson')}</button>`;
+  return h;
+}
+function personForm(teamId){
+  openModal(t('addPerson'),`
+    <div class="row-f"><div class="fld"><label>${t('name')} 1</label><input id="pf_first"></div><div class="fld"><label>${t('name')} 2</label><input id="pf_last"></div></div>
+    <div class="row-f"><div class="fld"><label>${t('role')}</label><input id="pf_role"></div><div class="fld"><label>${t('id')}</label><input id="pf_id"></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px"><button class="ib txt" onclick="closeModal()">${t('cancel')}</button><button class="ib txt go" onclick="personSave('${teamId}')">${t('save')}</button></div>
+  `,true);
+  setTimeout(()=>document.getElementById('pf_first').focus(),50);
+}
+function personSave(teamId){
+  const f=document.getElementById('pf_first').value.trim(), l=document.getElementById('pf_last').value.trim();
+  if(!f&&!l){toast('Enter a name');return;}
+  td(teamId).personnel.push({first:f,last:l,role:document.getElementById('pf_role').value.trim(),id:document.getElementById('pf_id').value.trim()});
+  save();closeModal();render();
+}
+function personDel(teamId,i){td(teamId).personnel.splice(i,1);save();render();}
+</script>
+<script>
+/* =========================================================================
+   SVG CHART ENGINE — bar, pie, area, hbar, radar. Theme-aware via getComputedStyle.
+   Every chart: type selector + refresh + enlarge. Safe against NaN/empty.
+   ========================================================================= */
+const CHARTREG={};   // id -> {build:()=>({type,data,types}), title}
+function cssVar(n){return getComputedStyle(document.body).getPropertyValue(n).trim()||'#888';}
+function num(v){const n=parseFloat(v);return isFinite(n)?n:0;}
+const CH_PALETTE=()=>[cssVar('--accent'),cssVar('--grn'),cssVar('--vio'),cssVar('--amb'),cssVar('--cy'),cssVar('--red'),'#7dd957','#ff9b54'];
+
+/* render a chart card: title, controls, svg target */
+function chartCard(key,title,builder,types,defType){
+  CHARTREG[key]={builder,title,type:defType||(types[0])};
+  const tbtns=types.map(tp=>`<button class="${CHARTREG[key].type===tp?'on':''}" onclick="chSetType('${key}','${tp}')">${tp[0].toUpperCase()+tp.slice(1)}</button>`).join('');
+  const tools=`<div class="chart-ctrl">
+      <span class="seg">${tbtns}</span>
+      <button class="mini" title="${t('refresh')}" onclick="chDraw('${key}')">⟳</button>
+      <button class="mini" title="${t('bigger')}" onclick="chBig('${key}')">⤢</button>
+    </div>`;
+  const body=`<div class="chart-wrap"><div id="chart_${key}"></div></div>`;
+  return card('ch_'+key,esc(title),body,tools);
+}
+function chSetType(key,tp){CHARTREG[key].type=tp;const c=document.getElementById('card_ch_'+key);if(c)c.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase()===tp));chDraw(key);}
+function chDraw(key){const e=CHARTREG[key];if(!e)return;const host=document.getElementById('chart_'+key);if(!host)return;let d;try{d=e.builder();}catch(err){d=[];}host.innerHTML=renderSVG(e.type,d,{});}
+function chBig(key){const e=CHARTREG[key];if(!e)return;let d;try{d=e.builder();}catch(err){d=[];}openModal(e.title,`<div style="margin-bottom:10px" class="chart-ctrl"><span class="muted">${t('chartType')}:</span> <span class="seg" id="bigSeg"></span></div><div id="bigChart"></div>`);
+  const seg=document.getElementById('bigSeg');const types=e.bigTypes||['bar','pie','area'];
+  seg.innerHTML=types.map(tp=>`<button class="${e.type===tp?'on':''} ">${tp[0].toUpperCase()+tp.slice(1)}</button>`).join('');
+  seg.querySelectorAll('button').forEach(b=>b.onclick=()=>{const tp=b.textContent.trim().toLowerCase();seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');document.getElementById('bigChart').innerHTML=renderSVG(tp,d,{big:true});});
+  document.getElementById('bigChart').innerHTML=renderSVG(e.type,d,{big:true});
+}
+function drawAllCharts(){Object.keys(CHARTREG).forEach(k=>{if(document.getElementById('chart_'+k))chDraw(k);});}
+
+/* data form: [{label, value} ...] or for multi-series [{label, values:[..], series:[names]}] */
+function renderSVG(type,data,o){
+  o=o||{};
+  if(!data||!data.length||data.every(d=>(d.value!=null?num(d.value):(d.values||[]).reduce((a,b)=>a+num(b),0))===0)){
+    return `<div class="chart-empty">${t('noData')}</div>`;
+  }
+  const W=o.big?720:560, H=o.big?380:230;
+  if(type==='pie')return svgPie(data,W,H);
+  if(type==='area')return svgArea(data,W,H);
+  if(type==='hbar')return svgHBar(data,W,H);
+  if(type==='radar')return svgRadar(data,W,H);
+  return svgBar(data,W,H);
+}
+function flat(data){ // normalize to single value per label (sum of series if multi)
+  return data.map(d=>({label:d.label,value:d.value!=null?num(d.value):(d.values||[]).reduce((a,b)=>a+num(b),0),color:d.color}));
+}
+function ink(){return cssVar('--ink-2');}function ink3(){return cssVar('--ink-3');}function lineC(){return cssVar('--line');}
+
+function svgBar(data,W,H){
+  const pal=CH_PALETTE();const pad=38;
+  const multi=data[0]&&data[0].values;const series=multi?data[0].values.length:1;
+  const labels=data.map(d=>d.label);
+  let max=1;data.forEach(d=>{(multi?d.values:[d.value]).forEach(v=>max=Math.max(max,num(v)));});
+  const gw=(W-pad*2)/data.length, bw=Math.min(46,gw/(series+0.6));
+  let bars='',axis='';
+  data.forEach((d,i)=>{
+    const gx=pad+i*gw;const vals=multi?d.values:[d.value];
+    vals.forEach((v,si)=>{const h=(num(v)/max)*(H-pad*2);const x=gx+(gw-bw*series)/2+si*bw;const y=H-pad-h;
+      bars+=`<rect x="${x+2}" y="${y}" width="${bw-4}" height="${h}" rx="3" fill="${pal[si%pal.length]}"><title>${esc(d.label)} ${multi?esc(d.series[si]):''}: ${num(v)}</title></rect>`;
+      if(!multi||series<=2)bars+=`<text x="${x+bw/2}" y="${y-4}" text-anchor="middle" font-size="10" font-weight="700" fill="${ink()}">${num(v)}</text>`;});
+    axis+=`<text x="${gx+gw/2}" y="${H-pad+15}" text-anchor="middle" font-size="10" fill="${ink3()}">${esc(trunc(d.label,multi?9:10))}</text>`;
+  });
+  return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}"><line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="${lineC()}"/>${bars}${axis}${multi?legend(data[0].series,W):''}</svg>`;
+}
+function svgHBar(data,W,H){
+  const d=flat(data);const pal=CH_PALETTE();const pad=8,lw=120;const max=Math.max(1,...d.map(x=>x.value));
+  const rh=Math.min(34,(H-16)/d.length);let h='';
+  d.forEach((x,i)=>{const y=8+i*rh;const w=(x.value/max)*(W-lw-40);
+    h+=`<text x="${lw-6}" y="${y+rh/2+4}" text-anchor="end" font-size="11" fill="${ink()}">${esc(trunc(x.label,16))}</text>`;
+    h+=`<rect x="${lw}" y="${y+3}" width="${Math.max(2,w)}" height="${rh-8}" rx="3" fill="${x.color||pal[i%pal.length]}"><title>${esc(x.label)}: ${x.value}</title></rect>`;
+    h+=`<text x="${lw+Math.max(2,w)+5}" y="${y+rh/2+4}" font-size="10" font-weight="700" fill="${ink()}">${x.value}</text>`;});
+  return `<svg class="chart-svg" viewBox="0 0 ${W} ${Math.max(H,d.length*rh+16)}">${h}</svg>`;
+}
+function svgPie(data,W,H){
+  const d=flat(data).filter(x=>x.value>0);const pal=CH_PALETTE();const total=d.reduce((a,b)=>a+b.value,0);
+  if(!total)return `<div class="chart-empty">${t('noData')}</div>`;
+  const cx=H/2+10,cy=H/2,r=H/2-20;let a=-Math.PI/2,seg='';
+  d.forEach((x,i)=>{const ang=x.value/total*2*Math.PI;const x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a);a+=ang;const x2=cx+r*Math.cos(a),y2=cy+r*Math.sin(a);const large=ang>Math.PI?1:0;
+    seg+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${pal[i%pal.length]}"><title>${esc(x.label)}: ${x.value} (${Math.round(x.value/total*100)}%)</title></path>`;});
+  let leg='';d.forEach((x,i)=>{const ly=24+i*20;leg+=`<rect x="${H+24}" y="${ly-10}" width="11" height="11" rx="2" fill="${pal[i%pal.length]}"/><text x="${H+40}" y="${ly}" font-size="11.5" fill="${ink()}">${esc(trunc(x.label,18))} — ${x.value}</text>`;});
+  return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}">${seg}${leg}</svg>`;
+}
+function svgArea(data,W,H){
+  const d=flat(data);const pad=38;const c=cssVar('--accent');const max=Math.max(1,...d.map(x=>x.value));
+  const sx=d.length>1?(W-pad*2)/(d.length-1):0;const pts=d.map((x,i)=>[pad+i*sx,H-pad-(x.value/max)*(H-pad*2)]);
+  const path='M'+pts.map(p=>p[0]+','+p[1]).join(' L');const area=path+` L${pts[pts.length-1][0]},${H-pad} L${pts[0][0]},${H-pad} Z`;
+  let dots='',axis='';pts.forEach((p,i)=>{dots+=`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="${c}"><title>${esc(d[i].label)}: ${d[i].value}</title></circle>`;axis+=`<text x="${p[0]}" y="${H-pad+15}" text-anchor="middle" font-size="10" fill="${ink3()}">${esc(trunc(d[i].label,10))}</text>`;});
+  return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity=".3"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></linearGradient></defs><line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="${lineC()}"/><path d="${area}" fill="url(#ag)"/><path d="${path}" fill="none" stroke="${c}" stroke-width="2.5"/>${dots}${axis}</svg>`;
+}
+function svgRadar(data,W,H){
+  const d=flat(data);const n=d.length;if(n<3)return svgHBar(data,W,H);
+  const cx=W/2,cy=H/2,r=H/2-30;const max=Math.max(1,...d.map(x=>x.value));const c=cssVar('--accent');
+  let grid='',axes='',pts=[];
+  for(let g=1;g<=3;g++){const rr=r*g/3;let p='';for(let i=0;i<n;i++){const a=-Math.PI/2+i*2*Math.PI/n;p+=(i?'L':'M')+(cx+rr*Math.cos(a))+','+(cy+rr*Math.sin(a))+' ';}grid+=`<path d="${p}Z" fill="none" stroke="${lineC()}"/>`;}
+  d.forEach((x,i)=>{const a=-Math.PI/2+i*2*Math.PI/n;const rr=x.value/max*r;pts.push([cx+rr*Math.cos(a),cy+rr*Math.sin(a)]);axes+=`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(a)}" y2="${cy+r*Math.sin(a)}" stroke="${lineC()}"/><text x="${cx+(r+14)*Math.cos(a)}" y="${cy+(r+14)*Math.sin(a)}" text-anchor="middle" font-size="10" fill="${ink3()}">${esc(trunc(x.label,9))}</text>`;});
+  const poly='M'+pts.map(p=>p[0]+','+p[1]).join(' L')+'Z';
+  return `<svg class="chart-svg" viewBox="0 0 ${W} ${H}">${grid}${axes}<path d="${poly}" fill="${c}" fill-opacity=".25" stroke="${c}" stroke-width="2"/></svg>`;
+}
+function legend(names,W){let h='';names.forEach((n,i)=>{const pal=CH_PALETTE();h+=`<rect x="${40+i*110}" y="6" width="10" height="10" rx="2" fill="${pal[i%pal.length]}"/><text x="${54+i*110}" y="15" font-size="10.5" fill="${ink()}">${esc(n)}</text>`;});return h;}
+function trunc(s,n){s=String(s==null?'':s);return s.length>n?s.slice(0,n-1)+'…':s;}
+</script>
+<script>
+/* =========================================================================
+   NAVIGATION + ROUTER + COMMON SECTIONS (risks, tna, personnel)
+   ========================================================================= */
+const NAV_IC={
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>',
+  overview:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
+  team:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.5M21 20a5 5 0 0 0-4-4.9"/></svg>'
+};
+function buildNav(){
+  const n=document.getElementById('navBar');
+  let h=`<div class="nav-cap">Main</div>`;
+  h+=navLink('home',t('home'),NAV_IC.home);
+  h+=`<div class="nav-cap" data-i18n="teamsCap">Teams</div>`;
+  h+=navLink('t1',DB.teamNames.t1,NAV_IC.team,'1');
+  h+=navLink('t2',DB.teamNames.t2,NAV_IC.team,'2');
+  h+=navLink('t3',DB.teamNames.t3,NAV_IC.team,'3');
+  h+=`<div class="nav-cap">Summary</div>`;
+  h+=navLink('overview',t('overview'),NAV_IC.overview);
+  n.innerHTML=h;
+}
+function navLink(v,label,ic,num){
+  return `<button class="nav-link ${view===v?'on':''}" onclick="go('${v}')"><span class="nav-ic">${ic}</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}</span>${num?`<span class="nav-num">${num}</span>`:''}</button>`;
+}
+function go(v){view=v;buildNav();render();window.scrollTo(0,0);}
+
+function render(){
+  const app=document.getElementById('app');
+  if(view==='home')app.innerHTML=vHome();
+  else if(view==='overview')app.innerHTML=vOverview();
+  else app.innerHTML=vTeam(view);
+  const tt=document.getElementById('topTitle');
+  if(tt)tt.textContent=(view==='home')?t('home'):(view==='overview')?t('overview'):DB.teamNames[view];
+  const sd=document.getElementById('side');if(sd)sd.classList.remove('open');
+  applyLang();
+  setTimeout(()=>{document.querySelectorAll('textarea.ci,.entry textarea,.li textarea').forEach(autoGrow);drawAllCharts();},0);
+}
+
+/* ----- common: risks ----- */
+function risksSection(teamId){
+  const ref=td(teamId).risks;
+  const html=tableHTML(ref,{id:'risks_'+teamId,dropdowns:{'Severity':'severity','Status':'status'},allowCols:false,fixedCols:['Risk / Blocker','Severity','Status']});
+  return card('risks_'+teamId+'_c',`<span class="num">!</span> ${t('risks')}`,html);
+}
+/* ----- common: tna ----- */
+function tnaSection(teamId){
+  const ref=td(teamId).tna;
+  const html=tableHTML(ref,{id:'tna_'+teamId,dropdowns:{'Status':'status'},allowCols:true});
+  return card('tna_'+teamId+'_c',t('tna'),html);
+}
+/* ----- common: personnel ----- */
+function personnelSection(teamId){
+  return card('pers_'+teamId+'_c',t('personnel'),personnelHTML(teamId));
+}
+</script>
+<script>
+/* =========================================================================
+   TEAM 1 — operational tasks dashboard
+   ========================================================================= */
+function vTeam(teamId){
+  if(teamId==='t1')return t1Page();
+  if(teamId==='t2')return t2Page();
+  if(teamId==='t3')return t3Page();
+  return '';
+}
+
+function teamHeader(teamId){
+  return `<div class="crumb"><h2><input value="${esc(DB.teamNames[teamId])}" onchange="renameTeam('${teamId}',this.value)" title="Team name"></h2><div class="sp"></div><span class="muted">${t('weekOf')} ${weekLabel(curWeek)}</span></div>`;
+}
+function renameTeam(teamId,v){DB.teamNames[teamId]=v||teamId;save();buildNav();}
+
+function t1Page(){
+  const d=td('t1');
+  let h=teamHeader('t1');
+
+  // 1 Daily Tasks
+  h+=card('t1_daily',`<span class="num">1</span> ${t('dailyTasks')}`,dailyHTML('t1',false));
+
+  // 2 Concerns
+  let cc='';d.concerns.forEach((c,i)=>{cc+=`<div class="concern"><span class="ts">${esc(c.ts)}</span><input value="${esc(c.text)}" oninput="d_t1_concern(${i},this.value)" placeholder="${t('concerns')}…"><button class="rx" title="${t('delete')}" onclick="d_t1_concernDel(${i})">🗑</button></div>`;});
+  cc+=`<button class="addrow" onclick="d_t1_concernAdd()">+ ${t('addItem')}</button>`;
+  h+=card('t1_concerns',`<span class="num">2</span> ${t('concerns')}`,cc);
+
+  // 3 Systems / Machines Activity (auto status)
+  h+=card('t1_systems',`<span class="num">3</span> ${t('systemsActivity')}`,systemsActivityHTML());
+
+  // 4 Tasks Summary
+  let ts=`<div class="grid g2">`;
+  // A Tasks Received
+  const recvRef=d.tasksRecv;
+  // B ongoing
+  let ong=`<div class="statbox" style="margin-bottom:10px"><div class="v">${d.ongoing.length}</div><div class="l">${t('ongoing')}</div></div>`;
+  d.ongoing.forEach((o,i)=>{ong+=`<div class="li"><span class="bul">•</span><textarea rows="1" oninput="autoGrow(this);d_t1_ong(${i},this.value)" onblur="saveSoon()">${esc(o.text)}</textarea><button class="rx" onclick="d_t1_ongDel(${i})">🗑</button></div>`;});
+  ong+=`<button class="addrow" onclick="d_t1_ongAdd()">+ ${t('addItem')}</button>`;
+  ts+=`</div>`;
+
+  h+=`<div class="crumb" style="margin:22px 0 12px"><h2 style="font-size:16px"><span class="num">4</span> ${t('tasksSummary')}</h2></div>`;
+  h+=card('t1_recv',t('tasksReceived'),tableHTML(recvRef,{id:'recv',dropdowns:{'Complexity':'complexity','Urgent':'urgent'},nums:['Total Received','Total Recovered','Progress %','Result Progress %'],allowCols:true,onChange:()=>chDraw('t1tasks')}));
+  h+=`<div class="grid g2">`;
+  h+=card('t1_ong',t('ongoing'),ong);
+  // C urgent
+  const urgRef=d.urgent;
+  h+=card('t1_urgent',t('urgentTasks'),tableHTML(urgRef,{id:'urg',dropdowns:{'Status':'status'},nums:['Progress %'],allowCols:false,fixedCols:['Task','Deadline','Owner','Status','Progress %']}));
+  h+=`</div>`;
+  // D recovered systems
+  const recRef=d.recovered;
+  let recHead=`<div class="statbox" style="margin-bottom:10px"><div class="v">${d.recovered.rows.length}</div><div class="l">${t('recoveredSystems')}</div></div>`;
+  h+=card('t1_rec',t('recoveredSystems'),recHead+tableHTML(recRef,{id:'rec',allowCols:true}));
+
+  // 5 Systems Outcomes
+  h+=card('t1_outcomes',`<span class="num">5</span> ${t('systemsOutcomes')}`,outcomesHTML());
+
+  // 6 Jira
+  h+=card('t1_jira',`<span class="num">6</span> ${t('jira')}`,jiraHTML());
+
+  // top charts (place after summary): Tasks Received/Recovered + Jira
+  h+=`<div class="grid g2">`;
+  h+=chartCard('t1tasks',t('tasksReceived')+' — '+t('received')+'/'+t('recovered'),()=>{
+    const r=td('t1').tasksRecv;const ci=r.cols.indexOf('Total Received'),co=r.cols.indexOf('Total Recovered');
+    const rec=r.rows.reduce((a,x)=>a+num(x[ci]),0),rcv=r.rows.reduce((a,x)=>a+num(x[co]),0);
+    return [{label:t('received'),value:rec,color:cssVar('--accent')},{label:t('recovered'),value:rcv,color:cssVar('--grn')}];
+  },['bar','pie'],d.chTasks||'bar');
+  h+=chartCard('t1jira',t('jira')+' — '+t('total')+'/'+t('recovered'),()=>{
+    const j=td('t1').jira;let tot=0,rec=0;j.forEach(x=>{tot+=num(x.total);rec+=num(x.recovered);});
+    if(!j.length)return [];
+    return [{label:t('total'),value:tot,color:cssVar('--vio')},{label:t('recovered'),value:rec,color:cssVar('--grn')}];
+  },['bar','pie'],d.chJira||'bar');
+  h+=`</div>`;
+
+  // common
+  h+=risksSection('t1');
+  h+=tnaSection('t1');
+  h+=personnelSection('t1');
+  return h;
+}
+
+/* concerns */
+function d_t1_concern(i,v){td('t1').concerns[i].text=v;saveSoon();}
+function d_t1_concernAdd(){const n=new Date();td('t1').concerns.push({ts:String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'),text:''});save();render();}
+function d_t1_concernDel(i){td('t1').concerns.splice(i,1);save();render();}
+/* ongoing */
+function d_t1_ong(i,v){td('t1').ongoing[i].text=v;saveSoon();}
+function d_t1_ongAdd(){td('t1').ongoing.push({text:''});save();render();}
+function d_t1_ongDel(i){td('t1').ongoing.splice(i,1);save();render();}
+
+/* systems activity table with auto-status indicator */
+function systemsActivityHTML(){
+  const sys=td('t1').systems;
+  let h=`<div class="tw"><table class="tbl"><thead><tr><th>System Name</th><th>Description</th><th>Active</th><th>Inactive</th><th>Status</th><th style="width:34px"></th></tr></thead><tbody>`;
+  sys.forEach((s,i)=>{
+    const a=num(s.active),ia=num(s.inactive);let cls='dot-grn';if(a===0&&ia>0)cls='dot-red';else if(a>0&&ia>0)cls='dot-amb';
+    h+=`<tr>
+      <td><textarea class="ci" rows="1" oninput="autoGrow(this);sysSet(${i},'name',this.value)" onblur="saveSoon()">${esc(s.name)}</textarea></td>
+      <td><textarea class="ci" rows="1" oninput="autoGrow(this);sysSet(${i},'desc',this.value)" onblur="saveSoon()">${esc(s.desc)}</textarea></td>
+      <td><input class="ci num" inputmode="numeric" value="${esc(s.active)}" oninput="sysSet(${i},'active',this.value)" onblur="sysStatusRefresh(${i})"></td>
+      <td><input class="ci num" inputmode="numeric" value="${esc(s.inactive)}" oninput="sysSet(${i},'inactive',this.value)" onblur="sysStatusRefresh(${i})"></td>
+      <td><span class="dotind ${cls}" id="sysdot_${i}"></span></td>
+      <td><button class="rx" title="${t('delete')}" onclick="sysDel(${i})">🗑</button></td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  if(!sys.length)h+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=`<button class="addrow" onclick="sysAdd()">+ ${t('addRow')}</button>`;
+  return h;
+}
+function sysSet(i,k,v){td('t1').systems[i][k]=v;saveSoon();}
+function sysStatusRefresh(i){const s=td('t1').systems[i];const a=num(s.active),ia=num(s.inactive);let cls='dot-grn';if(a===0&&ia>0)cls='dot-red';else if(a>0&&ia>0)cls='dot-amb';const el=document.getElementById('sysdot_'+i);if(el)el.className='dotind '+cls;save();}
+function sysAdd(){td('t1').systems.push({name:'',desc:'',active:'',inactive:''});save();render();}
+function sysDel(i){td('t1').systems.splice(i,1);save();render();}
+
+/* systems outcomes cards */
+function outcomesHTML(){
+  const o=td('t1').outcomes;
+  let h=`<div class="grid g3">`;
+  o.forEach((s,i)=>{
+    h+=`<div class="statbox" style="text-align:start;position:relative">
+      <button class="rx" style="position:absolute;top:6px;inset-inline-end:6px" onclick="outDel(${i})">🗑</button>
+      <textarea class="ci" rows="1" style="font-weight:700;font-size:14px" oninput="autoGrow(this);outSet(${i},'name',this.value)" onblur="saveSoon()" placeholder="System">${esc(s.name)}</textarea>
+      <textarea class="ci" rows="1" style="font-size:12px;color:var(--ink-2)" oninput="autoGrow(this);outSet(${i},'status',this.value)" onblur="saveSoon()" placeholder="Status line">${esc(s.status)}</textarea>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <div style="flex:1;text-align:center"><input class="ci num" value="${esc(s.active)}" oninput="outSet(${i},'active',this.value)" onblur="saveSoon()" style="text-align:center"><div class="l" style="font-size:9px">${t('active')}</div></div>
+        <div style="flex:1;text-align:center"><input class="ci num" value="${esc(s.pending)}" oninput="outSet(${i},'pending',this.value)" onblur="saveSoon()" style="text-align:center"><div class="l" style="font-size:9px">${t('pending')}</div></div>
+        <div style="flex:1;text-align:center"><input class="ci num" value="${esc(s.completed)}" oninput="outSet(${i},'completed',this.value)" onblur="saveSoon()" style="text-align:center"><div class="l" style="font-size:9px">${t('completed')}</div></div>
+      </div></div>`;
+  });
+  h+=`</div>`;
+  if(!o.length)h+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=`<button class="addrow" onclick="outAdd()">+ ${t('addItem')}</button>`;
+  return h;
+}
+function outSet(i,k,v){td('t1').outcomes[i][k]=v;saveSoon();}
+function outAdd(){td('t1').outcomes.push({name:'',status:'',active:'',pending:'',completed:''});save();render();}
+function outDel(i){td('t1').outcomes.splice(i,1);save();render();}
+
+/* jira */
+function jiraHTML(){
+  const ref={cols:['From Date','To Date','Total Tasks','Recovered Tasks','Notes'],rows:td('t1').jira.map(j=>[j.fromDate,j.toDate,j.total,j.recovered,j.notes])};
+  // we keep jira as objects; sync via wrapper
+  let h=`<div class="tw"><table class="tbl"><thead><tr><th>From Date</th><th>To Date</th><th>Total Tasks</th><th>Recovered</th><th>Notes</th><th style="width:34px"></th></tr></thead><tbody>`;
+  td('t1').jira.forEach((j,i)=>{
+    h+=`<tr>
+      <td><input class="ci" type="date" value="${esc(j.fromDate)}" onchange="jiraSet(${i},'fromDate',this.value)"></td>
+      <td><input class="ci" type="date" value="${esc(j.toDate)}" onchange="jiraSet(${i},'toDate',this.value)"></td>
+      <td><input class="ci num" inputmode="numeric" value="${esc(j.total)}" oninput="jiraSet(${i},'total',this.value)" onblur="jiraBlur()"></td>
+      <td><input class="ci num" inputmode="numeric" value="${esc(j.recovered)}" oninput="jiraSet(${i},'recovered',this.value)" onblur="jiraBlur()"></td>
+      <td><textarea class="ci" rows="1" oninput="autoGrow(this);jiraSet(${i},'notes',this.value)" onblur="saveSoon()">${esc(j.notes)}</textarea></td>
+      <td><button class="rx" title="${t('delete')}" onclick="jiraDel(${i})">🗑</button></td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>`;
+  if(!td('t1').jira.length)h+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=`<button class="addrow" onclick="jiraAdd()">+ ${t('addRow')}</button>`;
+  return h;
+}
+function jiraSet(i,k,v){td('t1').jira[i][k]=v;saveSoon();}
+function jiraBlur(){save();chDraw('t1jira');}
+function jiraAdd(){td('t1').jira.push({fromDate:curWeek,toDate:curWeek,total:'',recovered:'',notes:''});save();render();}
+function jiraDel(i){td('t1').jira.splice(i,1);save();render();}
+</script>
+<script>
+/* =========================================================================
+   TEAM 2 — task tracking dashboard
+   ========================================================================= */
+function t2Page(){
+  const d=td('t2');
+  let h=teamHeader('t2');
+
+  // 1 Daily
+  h+=card('t2_daily',`<span class="num">1</span> ${t('dailyTasks')}`,dailyHTML('t2',false));
+
+  // 2 Requested Tasks
+  h+=card('t2_req',`<span class="num">2</span> ${t('requestedTasks')}`,tableHTML(d.requested,{id:'t2req',allowCols:true}));
+
+  // 3 Statistics — readable labels from statsLabels
+  h+=statsSection();
+
+  // 4 Results
+  h+=resultsSection();
+
+  // 5 System Graph
+  h+=systemGraphSection();
+
+  // 6 Internal Tasks
+  h+=card('t2_int',`<span class="num">6</span> ${t('internalTasks')}`,tableHTML(d.internal,{id:'t2int',allowCols:true}));
+
+  h+=risksSection('t2');
+  h+=tnaSection('t2');
+  h+=personnelSection('t2');
+  return h;
+}
+
+/* statistics: periods with i1 received/analyzed, i2 received/analyzed; labels editable */
+function statsSection(){
+  const d=td('t2');const L=d.statsLabels;
+  let tbl=`<div class="row-f" style="margin-bottom:10px">
+    <div class="fld"><label>${t('name')} 1</label><input value="${esc(L.i1)}" onchange="statsLabel('i1',this.value)"></div>
+    <div class="fld"><label>${t('name')} 2</label><input value="${esc(L.i2)}" onchange="statsLabel('i2',this.value)"></div></div>`;
+  tbl+=`<div class="tw"><table class="tbl"><thead><tr><th>${t('date')}/Period</th><th>${esc(L.i1)} ${t('received')}</th><th>${esc(L.i1)} ${t('analyzed')}</th><th>${esc(L.i2)} ${t('received')}</th><th>${esc(L.i2)} ${t('analyzed')}</th><th style="width:34px"></th></tr></thead><tbody>`;
+  d.stats.forEach((s,i)=>{
+    tbl+=`<tr><td><input class="ci" value="${esc(s.period)}" oninput="statsSet(${i},'period',this.value)" onblur="saveSoon()"></td>
+      <td><input class="ci num" value="${esc(s.i1r)}" oninput="statsSet(${i},'i1r',this.value)" onblur="statsBlur()"></td>
+      <td><input class="ci num" value="${esc(s.i1a)}" oninput="statsSet(${i},'i1a',this.value)" onblur="statsBlur()"></td>
+      <td><input class="ci num" value="${esc(s.i2r)}" oninput="statsSet(${i},'i2r',this.value)" onblur="statsBlur()"></td>
+      <td><input class="ci num" value="${esc(s.i2a)}" oninput="statsSet(${i},'i2a',this.value)" onblur="statsBlur()"></td>
+      <td><button class="rx" onclick="statsDel(${i})">🗑</button></td></tr>`;
+  });
+  tbl+=`</tbody></table></div>`;
+  if(!d.stats.length)tbl+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  tbl+=`<button class="addrow" onclick="statsAdd()">+ ${t('addRow')}</button>`;
+  tbl+=`<div style="margin-top:14px">`+chartInner('t2stats')+`</div>`;
+  // register chart with readable labels (grouped totals)
+  CHARTREG['t2stats']={title:t('statistics'),type:d.chStats||'bar',builder:()=>{
+    const dd=td('t2');const L=dd.statsLabels;let i1r=0,i1a=0,i2r=0,i2a=0;
+    dd.stats.forEach(s=>{i1r+=num(s.i1r);i1a+=num(s.i1a);i2r+=num(s.i2r);i2a+=num(s.i2a);});
+    return [{label:L.i1+' '+t('received'),value:i1r},{label:L.i1+' '+t('analyzed'),value:i1a},{label:L.i2+' '+t('received'),value:i2r},{label:L.i2+' '+t('analyzed'),value:i2a}];
+  }};
+  return card('t2_stats',`<span class="num">3</span> ${t('statistics')}`,tbl,chartTools('t2stats',['bar','pie','hbar']));
+}
+function statsLabel(k,v){td('t2').statsLabels[k]=v;save();render();}
+function statsSet(i,k,v){td('t2').stats[i][k]=v;saveSoon();}
+function statsBlur(){save();chDraw('t2stats');}
+function statsAdd(){td('t2').stats.push({period:'',i1r:'',i1a:'',i2r:'',i2a:''});save();render();}
+function statsDel(i){td('t2').stats.splice(i,1);save();render();}
+
+/* results: modules name+value, radar/hbar */
+function resultsSection(){
+  const d=td('t2');
+  let tbl=`<div class="tw"><table class="tbl"><thead><tr><th>Module / Model</th><th>${t('count')}</th><th style="width:34px"></th></tr></thead><tbody>`;
+  d.results.forEach((m,i)=>{tbl+=`<tr><td><input class="ci" value="${esc(m.name)}" oninput="resSet(${i},'name',this.value)" onblur="saveSoon()"></td><td><input class="ci num" value="${esc(m.value)}" oninput="resSet(${i},'value',this.value)" onblur="resBlur()"></td><td><button class="rx" onclick="resDel(${i})">🗑</button></td></tr>`;});
+  tbl+=`</tbody></table></div>`;if(!d.results.length)tbl+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  tbl+=`<button class="addrow" onclick="resAdd()">+ ${t('addItem')}</button>`;
+  tbl+=`<div style="margin-top:14px">`+chartInner('t2res')+`</div>`;
+  CHARTREG['t2res']={title:d.resultsTitle,type:d.chResults||'hbar',builder:()=>td('t2').results.map(m=>({label:m.name||'—',value:num(m.value)}))};
+  return card('t2_res',`<span class="num">4</span> <input value="${esc(d.resultsTitle)}" onchange="resTitle(this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;border-radius:6px;padding:2px 6px" title="Title">`,tbl,chartTools('t2res',['hbar','radar','bar']));
+}
+function resTitle(v){td('t2').resultsTitle=v;save();}
+function resSet(i,k,v){td('t2').results[i][k]=v;saveSoon();}
+function resBlur(){save();chDraw('t2res');}
+function resAdd(){td('t2').results.push({name:'',value:''});save();render();}
+function resDel(i){td('t2').results.splice(i,1);save();render();}
+
+/* system graph */
+function systemGraphSection(){
+  const d=td('t2');
+  let tbl=`<div class="tw"><table class="tbl"><thead><tr><th>System</th><th>${t('count')}</th><th style="width:34px"></th></tr></thead><tbody>`;
+  d.sysGraph.forEach((m,i)=>{tbl+=`<tr><td><input class="ci" value="${esc(m.name)}" oninput="sgSet(${i},'name',this.value)" onblur="saveSoon()"></td><td><input class="ci num" value="${esc(m.value)}" oninput="sgSet(${i},'value',this.value)" onblur="sgBlur()"></td><td><button class="rx" onclick="sgDel(${i})">🗑</button></td></tr>`;});
+  tbl+=`</tbody></table></div>`;if(!d.sysGraph.length)tbl+=`<div class="empty"><div class="empty-h">—</div></div>`;
+  tbl+=`<button class="addrow" onclick="sgAdd()">+ ${t('addItem')}</button>`;
+  tbl+=`<div style="margin-top:14px">`+chartInner('t2sys')+`</div>`;
+  CHARTREG['t2sys']={title:d.sysTitle,type:d.chSys||'bar',builder:()=>td('t2').sysGraph.map(m=>({label:m.name||'—',value:num(m.value)}))};
+  return card('t2_sys',`<span class="num">5</span> <input value="${esc(d.sysTitle)}" onchange="sgTitle(this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;border-radius:6px;padding:2px 6px" title="Title">`,tbl,chartTools('t2sys',['bar','pie','area']));
+}
+function sgTitle(v){td('t2').sysTitle=v;save();}
+function sgSet(i,k,v){td('t2').sysGraph[i][k]=v;saveSoon();}
+function sgBlur(){save();chDraw('t2sys');}
+function sgAdd(){td('t2').sysGraph.push({name:'',value:''});save();render();}
+function sgDel(i){td('t2').sysGraph.splice(i,1);save();render();}
+
+/* helper: chart tools + inner target used inside a section card header */
+function chartTools(key,types){
+  const cur=CHARTREG[key]?CHARTREG[key].type:types[0];
+  const tb=types.map(tp=>`<button class="${cur===tp?'on':''}" onclick="chSetType('${key}','${tp}')">${tp[0].toUpperCase()+tp.slice(1)}</button>`).join('');
+  return `<div class="chart-ctrl"><span class="seg">${tb}</span><button class="mini" title="${t('refresh')}" onclick="chDraw('${key}')">⟳</button><button class="mini" title="${t('bigger')}" onclick="chBig('${key}')">⤢</button></div>`;
+}
+function chartInner(key){return `<div class="chart-wrap"><div id="chart_${key}"></div></div>`;}
+</script>
+<script>
+/* =========================================================================
+   TEAM 3 — operations / status dashboard
+   ========================================================================= */
+function t3Page(){
+  const d=td('t3');
+  let h=teamHeader('t3');
+
+  // 1 Daily (paragraph)
+  h+=card('t3_daily',`<span class="num">1</span> ${t('dailyTasks')}`,dailyListHTML('t3'));
+
+  // 2 Operations / Status — two groups of clickable color items
+  let ops=`<div class="grid g2">`;
+  ops+=`<div><input value="${esc(d.grp1Name)}" onchange="t3grpName('grp1Name',this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;font-size:13px;border-radius:6px;padding:4px 6px;width:100%;margin-bottom:8px" title="Group name">`;
+  d.grp1.forEach((it,i)=>{ops+=stItem('grp1',i,it);});
+  ops+=`<button class="addrow" onclick="t3stAdd('grp1')">+ ${t('addItem')}</button></div>`;
+  ops+=`<div><input value="${esc(d.grp2Name)}" onchange="t3grpName('grp2Name',this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;font-size:13px;border-radius:6px;padding:4px 6px;width:100%;margin-bottom:8px" title="Group name">`;
+  d.grp2.forEach((it,i)=>{ops+=stItem('grp2',i,it);});
+  ops+=`<button class="addrow" onclick="t3stAdd('grp2')">+ ${t('addItem')}</button></div>`;
+  ops+=`</div>`;
+  h+=card('t3_ops',`<span class="num">2</span> <input value="${esc(d.opsTitle)}" onchange="t3title('opsTitle',this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;border-radius:6px;padding:2px 6px;min-width:200px" title="Title">`,ops);
+
+  // 3 Log / Maintenance
+  let lm=``;
+  lm+=`<div style="font-weight:700;font-size:12.5px;margin-bottom:6px">A. Log Table</div>`;
+  lm+=tableHTML(d.logTable,{id:'t3log',dropdowns:{'Status':'status'},allowCols:true});
+  lm+=`<div style="font-weight:700;font-size:12.5px;margin:16px 0 6px">B. Notes / Bullets</div>`;
+  d.bullets.forEach((b,i)=>{lm+=`<div class="li"><span class="bul">•</span><textarea rows="1" oninput="autoGrow(this);t3bul(${i},this.value)" onblur="saveSoon()">${esc(b.text)}</textarea><button class="rx" onclick="t3bulDel(${i})">🗑</button></div>`;});
+  lm+=`<button class="addrow" onclick="t3bulAdd()">+ ${t('addItem')}</button>`;
+  lm+=`<div style="font-weight:700;font-size:12.5px;margin:16px 0 6px">C. Maintenance</div>`;
+  d.maintenance.forEach((m,i)=>{lm+=`<div class="li"><span class="bul">▪</span><textarea rows="1" oninput="autoGrow(this);t3mnt(${i},this.value)" onblur="saveSoon()">${esc(m.text)}</textarea><button class="rx" onclick="t3mntDel(${i})">🗑</button></div>`;});
+  lm+=`<button class="addrow" onclick="t3mntAdd()">+ ${t('addItem')}</button>`;
+  h+=card('t3_log',`<span class="num">3</span> <input value="${esc(d.logTitle)}" onchange="t3title('logTitle',this.value)" style="border:1px solid transparent;background:none;font:inherit;font-weight:700;border-radius:6px;padding:2px 6px;min-width:160px" title="Title">`,lm);
+
+  // 4 Operations Requests (ATM + Requests)
+  let no=`<div class="grid g2"><div><div style="font-weight:700;font-size:12.5px;margin-bottom:6px">A. ATM Requests</div>`+tableHTML(d.atm,{id:'t3atm',nums:['Total Requests','Done','Sent to Team','Pending'],allowCols:true})+`</div>`;
+  no+=`<div><div style="font-weight:700;font-size:12.5px;margin-bottom:6px">B. Requests</div>`+tableHTML(d.requests,{id:'t3req',nums:['Total Requests','Done','Pending'],allowCols:true})+`</div></div>`;
+  h+=card('t3_ops2',`<span class="num">4</span> ${t('nameOps')}`,no);
+
+  h+=risksSection('t3');
+  h+=tnaSection('t3');
+  h+=personnelSection('t3');
+  return h;
+}
+function stItem(grp,i,it){
+  const color=it.status||'green';
+  return `<div class="st-item"><span class="st-light ${color}" title="Click to change" onclick="t3cycle('${grp}',${i})"></span><input class="st-name" value="${esc(it.name)}" oninput="t3stSet('${grp}',${i},this.value)" onblur="saveSoon()" placeholder="${t('name')}"><button class="rx" onclick="t3stDel('${grp}',${i})">🗑</button></div>`;
+}
+function t3title(k,v){td('t3')[k]=v;save();}
+function t3grpName(k,v){td('t3')[k]=v;save();}
+function t3stAdd(grp){td('t3')[grp].push({name:'',status:'green'});save();render();}
+function t3stSet(grp,i,v){td('t3')[grp][i].name=v;saveSoon();}
+function t3stDel(grp,i){td('t3')[grp].splice(i,1);save();render();}
+function t3cycle(grp,i){const order=['green','yellow','red'];const cur=td('t3')[grp][i].status||'green';const nx=order[(order.indexOf(cur)+1)%3];td('t3')[grp][i].status=nx;save();const c=document.getElementById('card_t3_ops');render();}
+function t3bul(i,v){td('t3').bullets[i].text=v;saveSoon();}
+function t3bulAdd(){td('t3').bullets.push({text:''});save();render();}
+function t3bulDel(i){td('t3').bullets.splice(i,1);save();render();}
+function t3mnt(i,v){td('t3').maintenance[i].text=v;saveSoon();}
+function t3mntAdd(){td('t3').maintenance.push({text:''});save();render();}
+function t3mntDel(i){td('t3').maintenance.splice(i,1);save();render();}
+</script>
+<script>
+/* =========================================================================
+   HOME + OVERVIEW + EXPORT
+   ========================================================================= */
+function teamCompletion(teamId){
+  // rough completion from tasksRecv progress (t1) or results/sys (others); fall back to risks-free
+  const d=td(teamId);let pct=null;
+  if(teamId==='t1'&&d.tasksRecv&&d.tasksRecv.rows.length){const ci=d.tasksRecv.cols.indexOf('Progress %');if(ci>=0){const vals=d.tasksRecv.rows.map(r=>num(r[ci]));pct=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);}}
+  return pct;
+}
+function vHome(){
+  const teamIc='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 6.5a3 3 0 0 1 0 5.5M21 20a5 5 0 0 0-4-4.9"/></svg>';
+  const ovIc='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>';
+  const arrow='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+  let h=`<div class="hero"><h1>${t('welcome')}</h1><p>${t('heroSub')}</p>
+    <div class="tags"><span class="tag"><span class="d"></span>${t('appSub')}</span><span class="tag"><span class="d"></span>${weekLabel(curWeek)}</span></div>
+  </div><div class="home-cards">`;
+  [['t1'],['t2'],['t3']].forEach(([id])=>{
+    const pct=teamCompletion(id);
+    h+=`<div class="hcard" onclick="go('${id}')"><span class="arrow">${arrow}</span><div class="hic">${teamIc}</div><h3>${esc(DB.teamNames[id])}</h3><p>${t('openTeam')}</p>${pct!=null?`<div class="pct">${pct}%</div>`:''}</div>`;
+  });
+  h+=`<div class="hcard" onclick="go('overview')"><span class="arrow">${arrow}</span><div class="hic">${ovIc}</div><h3>${t('overview')}</h3><p>${t('viewOverview')}</p></div>`;
+  h+=`</div>`;
+  return h;
+}
+function vOverview(){
+  let h=`<div class="crumb"><h2>${t('overview')}</h2><div class="sp"></div><span class="muted">${t('weekOf')} ${weekLabel(curWeek)}</span></div>`;
+  h+=`<p class="muted" style="margin:-8px 0 16px">${t('execSummary')}</p>`;
+
+  // top stats
+  const t1=td('t1');
+  let recv=0,reco=0;if(t1.tasksRecv){const ci=t1.tasksRecv.cols.indexOf('Total Received'),co=t1.tasksRecv.cols.indexOf('Total Recovered');t1.tasksRecv.rows.forEach(r=>{recv+=num(r[ci]);reco+=num(r[co]);});}
+  let allRisks=0,allUrgent=t1.urgent.rows.length;['t1','t2','t3'].forEach(tid=>allRisks+=td(tid).risks.rows.length);
+  let jt=0,jr=0;t1.jira.forEach(j=>{jt+=num(j.total);jr+=num(j.recovered);});
+  h+=`<div class="grid g4" style="margin-bottom:18px">
+    <div class="statbox"><div class="v">${recv}</div><div class="l">${t('received')}</div></div>
+    <div class="statbox"><div class="v">${reco}</div><div class="l">${t('recovered')}</div></div>
+    <div class="statbox"><div class="v">${allUrgent}</div><div class="l">${t('urgentTasks')}</div></div>
+    <div class="statbox"><div class="v">${allRisks}</div><div class="l">${t('risks')}</div></div>
+  </div>`;
+
+  // charts: tasks recv/reco + jira
+  h+=`<div class="grid g2">`;
+  h+=chartCard('ovTasks',t('tasksReceived'),()=>[{label:t('received'),value:recv,color:cssVar('--accent')},{label:t('recovered'),value:reco,color:cssVar('--grn')}],['bar','pie'],'bar');
+  h+=chartCard('ovJira',t('jira'),()=>{if(!t1.jira.length)return [];return [{label:t('total'),value:jt,color:cssVar('--vio')},{label:t('recovered'),value:jr,color:cssVar('--grn')}];},['bar','pie'],'bar');
+  h+=`</div>`;
+
+  // systems outcomes / health from t1
+  if(t1.outcomes.length){
+    let o=`<div class="grid g3">`;t1.outcomes.forEach(s=>{o+=`<div class="statbox" style="text-align:start"><div style="font-weight:700">${esc(s.name||'—')}</div><div class="muted" style="font-size:12px">${esc(s.status||'')}</div><div style="display:flex;gap:10px;margin-top:6px;font-size:12px"><span>${t('active')}: <b>${esc(s.active||0)}</b></span><span>${t('pending')}: <b>${esc(s.pending||0)}</b></span><span>${t('completed')}: <b>${esc(s.completed||0)}</b></span></div></div>`;});o+=`</div>`;
+    h+=card('ov_out',t('systemsOutcomes'),o);
+  }
+
+  // risks by team
+  let rk='';['t1','t2','t3'].forEach(tid=>{
+    const rs=td(tid).risks.rows;if(!rs.length)return;
+    rk+=`<div style="font-weight:700;margin:10px 0 6px">${esc(DB.teamNames[tid])}</div>`;
+    rk+=`<div class="tw"><table class="tbl"><thead><tr><th>${t('risks')}</th><th>${t('severity')}</th><th>${t('status')}</th></tr></thead><tbody>`;
+    rs.forEach(r=>{const sev=(r[1]||'').toLowerCase();rk+=`<tr><td style="padding:7px 8px">${esc(r[0])}</td><td style="padding:7px 8px">${r[1]?`<span class="chip sev-${sev}">${esc(r[1])}</span>`:'—'}</td><td style="padding:7px 8px">${esc(r[2]||'—')}</td></tr>`;});
+    rk+=`</tbody></table></div>`;
+  });
+  if(!rk)rk=`<div class="empty"><div class="empty-h">—</div></div>`;
+  h+=card('ov_risks',t('risks'),rk);
+
+  // team2/team3 quick summaries
+  const t2=td('t2');
+  if(t2.results.length||t2.sysGraph.length){
+    h+=`<div class="grid g2">`;
+    if(t2.results.length)h+=chartCard('ovT2res',DB.teamNames.t2+' — '+t2.resultsTitle,()=>td('t2').results.map(m=>({label:m.name||'—',value:num(m.value)})),['hbar','bar','radar'],'hbar');
+    if(t2.sysGraph.length)h+=chartCard('ovT2sys',DB.teamNames.t2+' — '+t2.sysTitle,()=>td('t2').sysGraph.map(m=>({label:m.name||'—',value:num(m.value)})),['bar','pie'],'bar');
+    h+=`</div>`;
+  }
+  const t3=td('t3');const allSt=t3.grp1.concat(t3.grp2);
+  if(allSt.length){
+    let st=`<div class="grid g3">`;allSt.forEach(it=>{const c=it.status||'green';st+=`<div class="st-item"><span class="st-light ${c}"></span><span style="flex:1">${esc(it.name||'—')}</span></div>`;});st+=`</div>`;
+    h+=card('ov_t3',DB.teamNames.t3+' — '+t('operations'),st);
+  }
+
+  // quick links
+  h+=`<div class="crumb" style="margin-top:18px"><h2 style="font-size:15px">${t('quickLinks')}</h2></div><div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="ib" onclick="go('t1')">${esc(DB.teamNames.t1)}</button>
+    <button class="ib" onclick="go('t2')">${esc(DB.teamNames.t2)}</button>
+    <button class="ib" onclick="go('t3')">${esc(DB.teamNames.t3)}</button>
+  </div>`;
+
+  return h;
+}
+
+/* ---------- export / import ---------- */
+function exportJSON(){const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='dashboard-data.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),800);toast('JSON exported');}
+function importJSON(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const o=JSON.parse(e.target.result);if(!o.weeks||!o.teamNames)throw 0;DB=o;migrate();save();applyTheme();applyLang();buildNav();refreshWeekUI();render();toast('Imported');}catch(x){toast('Invalid data file');}};r.readAsText(f);inp.value='';}
+
+function exportWord(){
+  const teams=[['t1',DB.teamNames.t1],['t2',DB.teamNames.t2],['t3',DB.teamNames.t3]];
+  let body=`<h1 style="font-family:Segoe UI,Arial">${esc(DB.teamNames.t1?'Weekly Operations Report':'Report')}</h1><div style="font-family:Segoe UI,Arial;color:#666">${t('weekOf')} ${weekLabel(curWeek)}</div>`;
+  teams.forEach(([id,nm])=>{
+    const d=td(id);body+=`<h2 style="font-family:Segoe UI,Arial;border-bottom:2px solid #2f6bd8;color:#2f6bd8">${esc(nm)}</h2>`;
+    // daily
+    body+=`<h3 style="font-family:Segoe UI,Arial">${t('dailyTasks')}</h3>`;
+    if(id==='t3'&&Array.isArray(d.dailyList)){
+      (d.dailyList||[]).forEach(en=>{if(en.text)body+=`<p style="font-family:Segoe UI,Arial"><b>${esc(en.stamp||'')}:</b> ${esc(en.text)}</p>`;});
+    }else{
+      DAYKEYS.forEach((dk,i)=>{const e=d.daily[dk]||[];if(e.length){body+=`<p style="font-family:Segoe UI,Arial"><b>${dayName(i)}:</b> `+e.map(x=>esc(x.text)).filter(Boolean).join('; ')+`</p>`;}});
+    }
+    // risks
+    if(d.risks.rows.length){body+=`<h3 style="font-family:Segoe UI,Arial">${t('risks')}</h3>`+tblToWord(d.risks);}
+    // team-specific key tables
+    if(id==='t1'&&d.tasksRecv&&d.tasksRecv.rows.length){body+=`<h3 style="font-family:Segoe UI,Arial">${t('tasksReceived')}</h3>`+tblToWord(d.tasksRecv);}
+    if(id==='t2'&&d.requested.rows.length){body+=`<h3 style="font-family:Segoe UI,Arial">${t('requestedTasks')}</h3>`+tblToWord(d.requested);}
+    if(id==='t3'&&d.logTable.rows.length){body+=`<h3 style="font-family:Segoe UI,Arial">${t('logMaint')}</h3>`+tblToWord(d.logTable);}
+  });
+  body+=`<p style="font-family:Segoe UI,Arial;color:#999;margin-top:24px">Built by sxxiif</p>`;
+  const doc=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'></head><body>${body}</body></html>`;
+  const blob=new Blob(['\ufeff',doc],{type:'application/msword'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Weekly_Report_'+curWeek+'.doc';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),800);toast('Word exported');
+}
+function tblToWord(ref){let h=`<table style="border-collapse:collapse;font-family:Segoe UI,Arial;font-size:12px;width:100%"><thead><tr>`;ref.cols.forEach(c=>h+=`<th style="border:1px solid #ccc;background:#f2f4f8;padding:5px;text-align:left">${esc(c)}</th>`);h+=`</tr></thead><tbody>`;ref.rows.forEach(r=>{h+='<tr>';ref.cols.forEach((c,ci)=>h+=`<td style="border:1px solid #ccc;padding:5px">${esc(r[ci]||'')}</td>`);h+='</tr>';});h+=`</tbody></table>`;return h;}
+</script>
+<script>
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+function loadLogo(){
+  const el=document.getElementById('brandLogo');if(!el)return;
+  // OPTION B (Base64): to embed a logo directly, set LOGO_BASE64 below to a data URI
+  // e.g. const LOGO_BASE64='data:image/png;base64,iVBOR...';  then it is used automatically.
+  const LOGO_BASE64=''; // <-- paste your Base64 data URI here (optional)
+  if(LOGO_BASE64){el.innerHTML=`<img src="${LOGO_BASE64}" alt="logo">`;return;}
+  // OPTION A (local file): logo.png placed beside index.html
+  const img=new Image();
+  img.onload=()=>{el.innerHTML='';el.appendChild(img);img.alt='logo';};
+  img.onerror=()=>{/* no logo file — keep the lettermark, dashboard still works */};
+  img.src='logo.png';
+}
+
+(function boot(){
+  load();
+  applyTheme();
+  applyLang();
+  loadLogo();
+  refreshWeekUI();
+  buildNav();
+  render();
+})();
+</script>
+</body>
+</html>
