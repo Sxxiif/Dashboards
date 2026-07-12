@@ -1,0 +1,2031 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Offline Weekly Dashboard</title>
+<style>
+    :root {
+      --bg: #070b13;
+      --bg-2: #0b1220;
+      --panel: #111a2d;
+      --panel-2: #151f34;
+      --panel-3: #0f1728;
+      --text: #e8eefc;
+      --muted: #9aa8c4;
+      --line: rgba(255,255,255,.10);
+      --line-2: rgba(255,255,255,.16);
+      --accent: #60a5fa;
+      --accent-2: #7c3aed;
+      --good: #22c55e;
+      --warn: #eab308;
+      --bad: #ef4444;
+      --info: #38bdf8;
+      --shadow: 0 24px 70px rgba(0,0,0,.38);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --input: #0c1424;
+      --body-bg: radial-gradient(circle at top left, rgba(96,165,250,.18), transparent 38%), radial-gradient(circle at top right, rgba(124,58,237,.16), transparent 32%), linear-gradient(135deg, var(--bg), #0a1020 52%, #090d17);
+      --chart-text: #cbd5e1;
+      --chart-grid: rgba(255,255,255,.20);
+      --soft-surface: rgba(255,255,255,.035);
+    }
+
+    body.theme-light {
+      --bg: #eef4ff;
+      --bg-2: #f8fafc;
+      --panel: #ffffff;
+      --panel-2: #f1f5f9;
+      --panel-3: #e2e8f0;
+      --text: #0f172a;
+      --muted: #475569;
+      --line: rgba(15,23,42,.12);
+      --line-2: rgba(15,23,42,.20);
+      --accent: #2563eb;
+      --accent-2: #7c3aed;
+      --good: #16a34a;
+      --warn: #ca8a04;
+      --bad: #dc2626;
+      --info: #0284c7;
+      --shadow: 0 22px 55px rgba(15,23,42,.12);
+      --input: #ffffff;
+      --body-bg: radial-gradient(circle at top left, rgba(37,99,235,.12), transparent 34%), radial-gradient(circle at top right, rgba(124,58,237,.10), transparent 32%), linear-gradient(135deg, #eef4ff, #f8fafc 58%, #e8eef8);
+      --chart-text: #334155;
+      --chart-grid: rgba(15,23,42,.18);
+      --soft-surface: rgba(15,23,42,.035);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: var(--body-bg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      width: min(1500px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 28px;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 0 16px;
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 245px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 16px 42px rgba(96,165,250,.22);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      letter-spacing: -.03em;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 { font-size: 19px; letter-spacing: -.02em; }
+    .subtle { color: var(--muted); font-size: 13px; line-height: 1.45; }
+
+    .nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 245px;
+    }
+
+
+    .week-switcher {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      border: 1px solid rgba(96,165,250,.18);
+      border-radius: 16px;
+      background: rgba(7,11,19,.34);
+      min-width: 320px;
+    }
+    .week-chip {
+      min-width: 190px;
+      padding: 7px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.035);
+      text-align: center;
+      line-height: 1.25;
+    }
+    .week-chip span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .week-chip strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      color: #dbeafe;
+      white-space: nowrap;
+    }
+    .week-date-input {
+      width: 132px;
+      min-height: 32px;
+      padding: 6px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .btn {
+      border: 1px solid var(--line-2);
+      background: rgba(17,26,45,.78);
+      color: var(--text);
+      padding: 10px 13px;
+      border-radius: 12px;
+      min-height: 40px;
+      transition: transform .16s ease, border-color .16s ease, background .16s ease;
+    }
+    .btn:hover { transform: translateY(-1px); border-color: rgba(96,165,250,.55); background: rgba(24,36,61,.92); }
+    .btn.primary { background: linear-gradient(135deg, #2563eb, #7c3aed); border-color: transparent; }
+    .btn.danger { border-color: rgba(239,68,68,.36); color: #fecaca; }
+    .btn.good { border-color: rgba(34,197,94,.38); color: #bbf7d0; }
+    .btn.small { padding: 7px 9px; min-height: 32px; font-size: 12px; border-radius: 10px; }
+    .btn.ghost { background: transparent; }
+
+    .view { display: none; }
+    .view.active { display: block; animation: fadeIn .22s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hero {
+      margin-top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 34px;
+      background:
+        linear-gradient(135deg, rgba(17,26,45,.92), rgba(15,23,42,.76)),
+        radial-gradient(circle at 15% 15%, rgba(96,165,250,.24), transparent 30%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero:after {
+      content: "";
+      position: absolute;
+      right: -120px;
+      top: -120px;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(124,58,237,.22), transparent 66%);
+      pointer-events: none;
+    }
+
+    .hero h2 { font-size: clamp(30px, 4vw, 54px); letter-spacing: -.05em; line-height: 1; max-width: 900px; }
+    .hero p { margin-top: 14px; color: var(--muted); max-width: 850px; line-height: 1.65; }
+
+    .page-title {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 20px 0 16px;
+    }
+    .page-title h2 { font-size: 30px; letter-spacing: -.04em; }
+
+    .grid { display: grid; gap: 16px; }
+    .team-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 22px; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(17,26,45,.94), rgba(13,20,35,.94));
+      box-shadow: 0 16px 42px rgba(0,0,0,.22);
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .team-card { min-height: 190px; display: flex; flex-direction: column; justify-content: space-between; }
+    .team-card:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(96,165,250,.12), transparent 42%);
+      pointer-events: none;
+    }
+    .team-card h3, .card h3 { font-size: 18px; letter-spacing: -.02em; position: relative; }
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .card-head.wrap { align-items: flex-start; flex-wrap: wrap; }
+
+    .kpi {
+      min-height: 128px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: space-between;
+    }
+    .kpi .value { font-size: 34px; font-weight: 900; letter-spacing: -.05em; }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+
+    .section { margin-top: 16px; }
+    .pill-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; background: var(--accent); }
+    .dot.good { background: var(--good); } .dot.warn { background: var(--warn); } .dot.bad { background: var(--bad); }
+
+    .input, textarea, select {
+      width: 100%;
+      background: var(--input);
+      color: var(--text);
+      border: 1px solid var(--line-2);
+      border-radius: 12px;
+      padding: 10px 11px;
+      outline: none;
+      min-height: 40px;
+    }
+    textarea { min-height: 92px; resize: vertical; line-height: 1.5; }
+    .inline-input { min-width: 150px; }
+    .input:focus, textarea:focus, select:focus { border-color: rgba(96,165,250,.75); box-shadow: 0 0 0 4px rgba(96,165,250,.10); }
+
+
+    /* Dark native controls: fixes light dropdown menu text and date calendar icon visibility on VDI browsers. */
+    select, .cell-select, input[type="date"] { color-scheme: dark; }
+    select option, .cell-select option {
+      background: #0f1728;
+      color: #e8eefc;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1) brightness(1.9) contrast(1.05);
+      opacity: .82;
+      cursor: pointer;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+    .auto-grow {
+      min-height: 46px;
+      height: auto;
+      overflow: hidden;
+      resize: none;
+    }
+    .daily-task-textarea { min-height: 52px; }
+
+    .top-analytics-card {
+      border-color: rgba(96,165,250,.22);
+      background:
+        radial-gradient(circle at top left, rgba(96,165,250,.13), transparent 34%),
+        linear-gradient(180deg, rgba(17,26,45,.96), rgba(10,16,28,.96));
+    }
+    .chart-legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; }
+    .legend-line { width: 18px; height: 3px; border-radius: 99px; display: inline-block; background: var(--accent); }
+    .legend-line.green { background: var(--good); }
+    .legend-line.warn { background: var(--warn); }
+    .legend-line.info { background: var(--info); }
+
+    .concern-card {
+      border-color: rgba(251,191,36,.34);
+      background:
+        linear-gradient(180deg, rgba(34,28,13,.72), rgba(16,22,34,.96));
+    }
+    .concern-card .inline-input {
+      border-color: rgba(251,191,36,.30);
+      background: rgba(251,191,36,.08);
+      font-weight: 800;
+    }
+    .concern-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .concern-entry {
+      margin-top: 0;
+      min-height: 44px;
+      padding: 7px 8px 7px 12px;
+      border-color: rgba(251,191,36,.32);
+      background: linear-gradient(90deg, rgba(251,191,36,.16), rgba(251,191,36,.055));
+      border-left: 4px solid #fbbf24;
+      box-shadow: none;
+      display: grid;
+      grid-template-columns: auto minmax(220px, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+    }
+    .concern-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #fbbf24;
+      box-shadow: 0 0 0 4px rgba(251,191,36,.12);
+    }
+    .concern-line-input {
+      min-height: 32px;
+      padding: 6px 8px;
+      border-radius: 9px;
+      background: rgba(7,11,19,.45);
+      border: 1px solid rgba(251,191,36,.18);
+      color: #fff7d6;
+      width: 100%;
+      outline: none;
+    }
+    .concern-line-input:focus { border-color: rgba(251,191,36,.60); box-shadow: 0 0 0 3px rgba(251,191,36,.10); }
+    .concern-time { color: #fde68a; font-size: 11px; white-space: nowrap; opacity: .78; }
+    .concern-actions { display: flex; justify-content: flex-end; }
+
+    .label-input {
+      width: auto;
+      min-width: 120px;
+      max-width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text);
+      font-weight: 800;
+      padding: 4px 6px;
+      border-radius: 8px;
+    }
+    .label-input:hover, .label-input:focus { border-color: var(--line-2); background: rgba(255,255,255,.04); outline: none; }
+    .th-label-input {
+      width: 150px;
+      min-width: 110px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #cbd5e1;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      font-weight: 800;
+      padding: 3px 5px;
+      border-radius: 7px;
+    }
+    .th-label-input:hover, .th-label-input:focus { border-color: var(--line-2); background: rgba(255,255,255,.04); outline: none; }
+
+    .table-wrap { width: 100%; overflow-x: auto; border-radius: 14px; border: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; min-width: 850px; background: rgba(8,13,24,.46); }
+    th, td { padding: 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: #cbd5e1; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; background: rgba(255,255,255,.04); white-space: nowrap; }
+    td { color: var(--text); font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    tr.urgent-row td { background: rgba(239,68,68,.08); }
+    .cell-input, .cell-select {
+      min-width: 110px;
+      width: 100%;
+      background: rgba(255,255,255,.035);
+      border: 1px solid transparent;
+      color: var(--text);
+      padding: 8px;
+      border-radius: 9px;
+      outline: none;
+    }
+    .cell-input:focus, .cell-select:focus { border-color: rgba(96,165,250,.55); background: rgba(255,255,255,.06); }
+    .cell-small { min-width: 80px; }
+    .th-tools { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+    .mini { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 8px; padding: 3px 6px; }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 7px 9px;
+      font-size: 12px;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    .status-good { color: #bbf7d0; background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.28); }
+    .status-warn { color: #fef3c7; background: rgba(234,179,8,.10); border-color: rgba(234,179,8,.28); }
+    .status-bad { color: #fecaca; background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.28); }
+
+    .day-grid { grid-template-columns: repeat(7, minmax(230px, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+    .day-card { min-height: 240px; }
+    .entry {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,.035);
+    }
+    .entry-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 11px; margin-bottom: 7px; }
+
+    .metric-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+    .mini-metric { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.035); }
+    .mini-metric strong { display: block; font-size: 24px; letter-spacing: -.04em; }
+    .mini-metric span { color: var(--muted); font-size: 12px; }
+
+    .chart-box {
+      min-height: 340px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(6,10,18,.54), rgba(255,255,255,.025));
+      padding: 12px;
+      overflow: hidden;
+    }
+    .chart-box svg { width: 100%; height: 315px; display: block; }
+    .chart-box.large svg { height: min(68vh, 720px); }
+    .chart-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .chart-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chart-type-select { width: 145px; min-height: 34px; padding: 7px 9px; border-radius: 10px; }
+    .chart-modal-root:empty { display: none; }
+    .chart-modal-root {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(3,7,18,.76);
+      backdrop-filter: blur(12px);
+      padding: 24px;
+      display: grid;
+      place-items: center;
+    }
+    .chart-modal-panel {
+      width: min(1320px, 96vw);
+      max-height: 92vh;
+      overflow: auto;
+      border: 1px solid var(--line-2);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(17,26,45,.98), rgba(8,13,24,.98));
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+    body.modal-open { overflow: hidden; }
+    .empty {
+      border: 1px dashed var(--line-2);
+      color: var(--muted);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+      background: rgba(255,255,255,.025);
+    }
+
+    .footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 26px 0 8px;
+      font-size: 13px;
+    }
+
+    .hidden-file { display: none; }
+
+
+    /* Team 2 / Team 3 expanded dashboard additions */
+    .section-tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .mini-toolbar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; }
+    .flex-th { min-width: 150px; vertical-align: top; }
+    .flex-th-stack { display:grid; gap:7px; }
+    .flex-th-actions { display:flex; gap:6px; align-items:center; }
+    .tiny-select { min-height: 30px; padding:5px 7px; border-radius:9px; min-width:92px; }
+    .tiny-btn { padding:6px 8px !important; border-radius:9px !important; min-height:30px !important; }
+    .status-grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:16px; }
+    .status-row { display:grid; grid-template-columns: 1fr 145px auto; gap:10px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:14px; background: rgba(255,255,255,.025); margin-top:8px; }
+    .status-pill { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-width: 105px; padding:8px 10px; border-radius:999px; border:1px solid var(--line); font-size:12px; font-weight:800; }
+    .status-pill::before { content:''; width:9px; height:9px; border-radius:50%; background: currentColor; box-shadow:0 0 14px currentColor; }
+    .status-pill.green { color:#86efac; background:rgba(34,197,94,.09); border-color:rgba(34,197,94,.32); }
+    .status-pill.yellow { color:#fde68a; background:rgba(234,179,8,.10); border-color:rgba(234,179,8,.30); }
+    .status-pill.red { color:#fecaca; background:rgba(239,68,68,.10); border-color:rgba(239,68,68,.30); }
+    .bullet-row { display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:start; padding:10px 0; border-bottom:1px solid var(--line); }
+    .bullet-row:last-child { border-bottom:none; }
+    .report-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .chart-box.tall { min-height: 360px; }
+    .chart-caption { color:var(--muted); font-size:12px; margin-top:8px; }
+    .print-only { display:none; }
+
+
+    /* Premium flexibility and theme polish */
+    h1, h2, h3, p, .btn, .pill, .week-chip strong { overflow-wrap: anywhere; }
+    .card-head > div { min-width: 0; max-width: 100%; }
+    .label-textarea {
+      display: block;
+      width: min(100%, 720px);
+      min-width: min(260px, 100%);
+      min-height: 34px;
+      height: auto;
+      overflow: hidden;
+      resize: none;
+      line-height: 1.18;
+      white-space: normal;
+      word-break: break-word;
+      font-size: inherit;
+    }
+    .page-title .label-textarea, h2 .label-textarea { font-size: 30px; letter-spacing: -.04em; }
+    .flex-th-row { display:flex; align-items:flex-start; gap:8px; }
+    .remove-col-btn {
+      flex: 0 0 auto;
+      width: 26px;
+      height: 26px;
+      border-radius: 9px;
+      border: 1px solid rgba(239,68,68,.30);
+      background: transparent;
+      color: #fca5a5;
+      font-weight: 900;
+      line-height: 1;
+    }
+    .remove-col-btn:hover { background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.58); }
+    .flex-th-stack, .flex-th-actions, .tiny-select { display: none; }
+    body.theme-light .card, body.theme-light .hero {
+      background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(248,250,252,.94));
+    }
+    body.theme-light .btn { background: rgba(255,255,255,.80); color: var(--text); }
+    body.theme-light .btn.primary { color: #fff; background: linear-gradient(135deg, #2563eb, #7c3aed); }
+    body.theme-light table { background: rgba(255,255,255,.78); }
+    body.theme-light th { color: #334155; background: rgba(15,23,42,.045); }
+    body.theme-light .th-label-input { color: #334155; }
+    body.theme-light .chart-box { background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(241,245,249,.92)); }
+    body.theme-light select, body.theme-light .cell-select, body.theme-light input[type="date"] { color-scheme: light; }
+    body.theme-light select option, body.theme-light .cell-select option { background: #ffffff; color: #0f172a; }
+    body.theme-light input[type="date"]::-webkit-calendar-picker-indicator { filter: none; opacity: .78; }
+    .chart-box svg text, .chart-modal-panel svg text { fill: var(--chart-text) !important; }
+    .chart-box svg line, .chart-modal-panel svg line { stroke: var(--chart-grid) !important; }
+    .personnel-section {
+      border-color: rgba(124,58,237,.28);
+      background: radial-gradient(circle at top left, rgba(124,58,237,.12), transparent 32%), linear-gradient(180deg, rgba(17,26,45,.96), rgba(10,16,28,.96));
+    }
+    .person-field-editor { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .person-field-chip { display:flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius: 12px; padding:6px; background: var(--soft-surface); }
+    .person-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:14px; }
+    .person-card {
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 15px;
+      background: radial-gradient(circle at top left, rgba(96,165,250,.14), transparent 35%), var(--soft-surface);
+      box-shadow: 0 16px 35px rgba(0,0,0,.14);
+    }
+    .person-card-top { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .person-avatar {
+      width: 54px; height:54px; border-radius: 999px;
+      display:grid; place-items:center;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#fff; font-weight:900; letter-spacing:.02em;
+      box-shadow: 0 16px 30px rgba(37,99,235,.25);
+      flex:0 0 auto;
+    }
+    .person-identity { min-width:0; display:grid; gap:2px; }
+    .person-identity strong { font-size:16px; overflow-wrap:anywhere; }
+    .person-identity span, .person-identity small { color: var(--muted); overflow-wrap:anywhere; }
+    .person-fields { display:grid; gap:10px; margin-bottom:12px; }
+    .person-fields label { display:grid; gap:5px; }
+    .person-fields label span { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.07em; font-weight:800; overflow-wrap:anywhere; }
+    .premium-status-row { grid-template-columns: minmax(220px, 1fr) auto auto auto; padding:14px; border-radius: 18px; background: radial-gradient(circle at top left, rgba(96,165,250,.07), transparent 40%), var(--soft-surface); }
+    .status-picker { display:flex; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:999px; background: var(--soft-surface); }
+    .status-dot-option { width:18px; height:18px; border-radius:999px; border:0; opacity:.36; transform:scale(.86); transition:.16s ease; }
+    .status-dot-option.green, .status-pulse.green { background: var(--good); box-shadow:0 0 18px rgba(34,197,94,.40); }
+    .status-dot-option.yellow, .status-pulse.yellow { background: var(--warn); box-shadow:0 0 18px rgba(234,179,8,.40); }
+    .status-dot-option.red, .status-pulse.red { background: var(--bad); box-shadow:0 0 18px rgba(239,68,68,.40); }
+    .status-dot-option.active { opacity:1; transform:scale(1.16); outline:3px solid rgba(255,255,255,.12); }
+    .status-pulse { display:inline-block; width:34px; height:16px; border-radius:999px; border:1px solid rgba(255,255,255,.24); }
+    body.theme-light .status-dot-option.active { outline-color: rgba(15,23,42,.12); }
+    @media (max-width: 760px) { .premium-status-row { grid-template-columns: 1fr; } .label-textarea { min-width: 100%; } }
+    @media (max-width: 900px) { .status-grid { grid-template-columns: 1fr; } .status-row { grid-template-columns: 1fr; } }
+
+
+    /* Final audit polish: readable themes, compact personnel cards, wrapping labels */
+    .card h3, .card-head h3, .page-title h2 { max-width: 100%; min-width: 0; line-height: 1.18; }
+    .label-input { white-space: normal; overflow: visible; text-overflow: clip; }
+    .label-textarea {
+      width: 100%;
+      max-width: 820px;
+      min-width: min(220px, 100%);
+      min-height: 34px;
+      height: auto;
+      border-radius: 10px;
+      line-height: 1.18;
+      overflow-y: hidden;
+    }
+    .card-head h3 .label-textarea, .card-head .label-textarea { font-size: clamp(16px, 1.3vw, 21px); }
+    .page-title .label-textarea, h2 .label-textarea { font-size: clamp(24px, 2.4vw, 30px); }
+    .th-label-input { white-space: normal; overflow-wrap: anywhere; text-transform: none; line-height: 1.2; }
+    th { white-space: normal; line-height: 1.25; }
+    .btn { white-space: normal; line-height: 1.15; }
+
+    body.theme-light .week-chip strong { color: #1e3a8a; }
+    body.theme-light .topbar { color: var(--text); }
+    body.theme-light .concern-card {
+      border-color: rgba(180,83,9,.46);
+      background: linear-gradient(180deg, rgba(255,251,235,.98), rgba(254,243,199,.88));
+    }
+    body.theme-light .concern-card .inline-input {
+      color: #78350f;
+      background: rgba(180,83,9,.10);
+      border-color: rgba(180,83,9,.32);
+    }
+    body.theme-light .concern-entry {
+      border-color: rgba(180,83,9,.42);
+      background: linear-gradient(90deg, rgba(245,158,11,.30), rgba(217,119,6,.12));
+      border-left-color: #92400e;
+    }
+    body.theme-light .concern-dot { background:#92400e; box-shadow:0 0 0 4px rgba(146,64,14,.14); }
+    body.theme-light .concern-line-input {
+      background: rgba(255,255,255,.82);
+      border-color: rgba(146,64,14,.34);
+      color: #451a03;
+    }
+    body.theme-light .concern-time { color: #78350f; opacity: .95; }
+    body.theme-light .status-good { color:#14532d; background:#dcfce7; border-color:rgba(22,101,52,.30); }
+    body.theme-light .status-warn { color:#713f12; background:#fef3c7; border-color:rgba(146,64,14,.32); }
+    body.theme-light .status-bad { color:#7f1d1d; background:#fee2e2; border-color:rgba(153,27,27,.32); }
+    body.theme-light .dot.good { background:#15803d; }
+    body.theme-light .dot.warn { background:#a16207; }
+    body.theme-light .dot.bad { background:#b91c1c; }
+    body.theme-light .status-dot-option.green, body.theme-light .status-pulse.green { background:#15803d; box-shadow:0 0 18px rgba(21,128,61,.36); }
+    body.theme-light .status-dot-option.yellow, body.theme-light .status-pulse.yellow { background:#a16207; box-shadow:0 0 18px rgba(161,98,7,.36); }
+    body.theme-light .status-dot-option.red, body.theme-light .status-pulse.red { background:#b91c1c; box-shadow:0 0 18px rgba(185,28,28,.34); }
+    body.theme-light .chart-modal-panel { background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,245,249,.98)); }
+
+    .personnel-section { padding: 16px; }
+    .person-create-form {
+      display: grid;
+      grid-template-columns: minmax(120px, .8fr) minmax(180px, 1.2fr) minmax(160px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--soft-surface);
+    }
+    .person-grid { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+    .person-card.compact-person-card { padding: 12px; border-radius: 16px; min-height: 0; }
+    .person-card.compact-person-card .person-card-top { margin-bottom: 10px; }
+    .person-card.compact-person-card .person-avatar { width: 42px; height: 42px; font-size: 14px; }
+    .person-card.compact-person-card .person-identity strong { font-size: 14px; line-height: 1.18; }
+    .person-card.compact-person-card .person-identity span,
+    .person-card.compact-person-card .person-identity small { font-size: 12px; line-height: 1.25; }
+    .person-extra-row { display:flex; flex-wrap:wrap; gap:6px; margin: 6px 0 10px; }
+    .person-extra-chip { font-size: 11px; color: var(--muted); border:1px solid var(--line); border-radius:999px; padding:4px 7px; background: var(--soft-surface); }
+    .person-extra-chip b { color: var(--text); }
+    @media (max-width: 760px) { .person-create-form { grid-template-columns: 1fr; } }
+
+
+    /* Final fixes: one-line expandable subjects, compact people cards, reliable status controls, refresh buttons */
+    .card-head { align-items: flex-start; }
+    .card-head > div:first-child { flex: 1 1 520px; min-width: min(360px, 100%); max-width: 100%; }
+    .card-head h3 { flex: 1 1 auto; min-width: min(360px, 100%); max-width: 100%; }
+    .subject-label {
+      display: inline-block;
+      max-width: 100%;
+      min-width: min(220px, 100%);
+      width: var(--label-width, auto);
+      height: auto;
+      min-height: 40px;
+      white-space: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      text-overflow: clip;
+      resize: none;
+      line-height: 1.18;
+      vertical-align: middle;
+      scrollbar-width: thin;
+    }
+    .card-head h3 .subject-label, .card-head .subject-label {
+      font-size: clamp(17px, 1.35vw, 22px);
+      letter-spacing: -.025em;
+    }
+    .page-title .subject-label, h2 .subject-label {
+      font-size: clamp(26px, 2.3vw, 32px);
+      letter-spacing: -.045em;
+      min-width: min(420px, 100%);
+    }
+    .team-name-input {
+      background: rgba(96,165,250,.07);
+      border-color: rgba(96,165,250,.20);
+      padding: 7px 9px;
+      border-radius: 12px;
+    }
+    body.theme-light .team-name-input { background: rgba(37,99,235,.055); border-color: rgba(37,99,235,.20); }
+    .subject-label:focus { min-width: min(520px, 100%); }
+    .person-grid { grid-template-columns: repeat(auto-fit, minmax(175px, 230px)); justify-content: start; }
+    .person-card.compact-person-card { padding: 10px 11px; max-width: 230px; }
+    .person-card.compact-person-card .person-card-top { gap: 9px; margin-bottom: 8px; }
+    .person-card.compact-person-card .person-avatar { width: 38px; height: 38px; font-size: 13px; }
+    .person-card.compact-person-card .person-identity strong { font-size: 13px; }
+    .person-card.compact-person-card .person-identity span,
+    .person-card.compact-person-card .person-identity small { font-size: 11px; }
+    .person-card.compact-person-card .btn { width: 100%; margin-top: 4px; }
+    .status-dot-option { cursor: pointer; min-width: 22px; min-height: 22px; }
+    .status-picker { cursor: default; }
+    .status-pulse { cursor: pointer; }
+    button.status-pulse { padding: 0; appearance: none; -webkit-appearance: none; }
+    button.status-pulse:focus-visible { outline: 3px solid rgba(96,165,250,.45); outline-offset: 3px; }
+
+    .refresh-btn { border-color: rgba(56,189,248,.32); color: var(--text); }
+    body.theme-light .refresh-btn { border-color: rgba(2,132,199,.30); color: #0f172a; background: rgba(255,255,255,.82); }
+    @media (max-width: 760px) {
+      .card-head > div:first-child, .card-head h3 { min-width: 100%; }
+      .subject-label, .page-title .subject-label, h2 .subject-label { width: 100% !important; min-width: 100%; }
+      .person-grid { grid-template-columns: 1fr; }
+      .person-card.compact-person-card { max-width: none; }
+    }
+
+
+
+    /* Final polish: compact delete icons, clean action columns, scroll-stable edits */
+    .sr-only { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
+    .trash-btn {
+      width: 32px;
+      min-width: 32px;
+      height: 32px;
+      min-height: 32px;
+      padding: 0 !important;
+      display: inline-grid;
+      place-items: center;
+      font-size: 15px !important;
+      line-height: 1;
+      border-radius: 10px !important;
+      color: #fecaca !important;
+      background: rgba(239,68,68,.075) !important;
+      border-color: rgba(239,68,68,.30) !important;
+    }
+    .trash-btn:hover { background: rgba(239,68,68,.16) !important; border-color: rgba(239,68,68,.52) !important; }
+    body.theme-light .trash-btn { color:#991b1b !important; background:#fee2e2 !important; border-color:rgba(185,28,28,.24) !important; }
+    body.theme-light .trash-btn:hover { background:#fecaca !important; border-color:rgba(185,28,28,.36) !important; }
+    th.action-col, td.action-col { width: 46px; min-width: 46px; text-align: center; }
+    th.action-col { padding-left: 6px; padding-right: 6px; }
+    .overview-risk-group { display:grid; gap:10px; }
+    .risk-chip-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+    .risk-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:5px 8px; font-size:11px; color:var(--muted); background:var(--soft-surface); }
+    .risk-chip.high, .risk-chip.critical { color:#fecaca; border-color:rgba(239,68,68,.32); background:rgba(239,68,68,.08); }
+    body.theme-light .risk-chip.high, body.theme-light .risk-chip.critical { color:#7f1d1d; background:#fee2e2; border-color:rgba(185,28,28,.22); }
+
+
+    /* Final compact table + dropdown + number input fixes */
+    table { min-width: 0 !important; width: 100% !important; table-layout: auto; }
+    .table-wrap { overflow-x: auto; }
+    th, td { padding: 7px 8px !important; }
+    th { font-size: 11px !important; letter-spacing: .035em !important; }
+    td { font-size: 12px !important; }
+    .cell-input, .cell-select { min-width: 0 !important; width: 100% !important; max-width: 100%; padding: 7px 8px !important; }
+    .cell-small { min-width: 64px !important; max-width: 90px; }
+    .table-wrap input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+    .table-wrap input[type=number]::-webkit-outer-spin-button,
+    .table-wrap input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .th-tools .mini { display: none !important; }
+    .tasks-received-table th:nth-child(1), .tasks-received-table td:nth-child(1) { width: 112px; }
+    .tasks-received-table th:nth-child(2), .tasks-received-table td:nth-child(2) { width: 92px; }
+    .tasks-received-table th:nth-child(4), .tasks-received-table td:nth-child(4),
+    .tasks-received-table th:nth-child(5), .tasks-received-table td:nth-child(5),
+    .tasks-received-table th:nth-child(9), .tasks-received-table td:nth-child(9),
+    .tasks-received-table th:nth-child(10), .tasks-received-table td:nth-child(10) { width: 82px; }
+    .tasks-received-table th:nth-child(6), .tasks-received-table td:nth-child(6),
+    .tasks-received-table th:nth-child(7), .tasks-received-table td:nth-child(7),
+    .tasks-received-table th:nth-child(8), .tasks-received-table td:nth-child(8) { width: 92px; }
+    .jira-table th, .jira-table td { width: auto; }
+    .jira-table th:nth-child(1), .jira-table td:nth-child(1),
+    .jira-table th:nth-child(2), .jira-table td:nth-child(2) { width: 130px; }
+    .jira-table th:nth-child(3), .jira-table td:nth-child(3),
+    .jira-table th:nth-child(4), .jira-table td:nth-child(4) { width: 120px; }
+    .table-wrap .action-col { width: 42px !important; min-width: 42px !important; max-width: 42px !important; }
+    .select-pill { cursor: pointer; font-weight: 800; }
+    body.theme-light .cell-select, body.theme-light .select-pill { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+    body.theme-light .cell-select option { background: #fff; color: #0f172a; }
+
+
+
+    /* Final pass: icon-only delete/refresh buttons, compact Jira table, stable numeric inputs */
+    button.btn.danger,
+    button.btn.danger.trash-btn {
+      width: 34px !important;
+      min-width: 34px !important;
+      max-width: 34px !important;
+      height: 34px !important;
+      min-height: 34px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-indent: -9999px !important;
+      font-size: 0 !important;
+      line-height: 1 !important;
+      border-radius: 11px !important;
+      flex: 0 0 34px !important;
+    }
+    button.btn.danger::before,
+    button.btn.danger.trash-btn::before {
+      content: "🗑";
+      text-indent: 0 !important;
+      font-size: 15px !important;
+      line-height: 1 !important;
+      display: block !important;
+    }
+    .action-col,
+    th.action-col,
+    td.action-col {
+      width: 44px !important;
+      min-width: 44px !important;
+      max-width: 44px !important;
+      text-align: center !important;
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+      white-space: nowrap !important;
+    }
+    .refresh-btn {
+      width: 34px !important;
+      min-width: 34px !important;
+      max-width: 34px !important;
+      height: 32px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      overflow: hidden !important;
+      text-indent: -9999px !important;
+      font-size: 0 !important;
+      line-height: 1 !important;
+      flex: 0 0 34px !important;
+    }
+    .refresh-btn::before {
+      content: "↻";
+      text-indent: 0 !important;
+      font-size: 17px !important;
+      font-weight: 900 !important;
+      line-height: 1 !important;
+      display: block !important;
+    }
+    .chart-tools { align-items: center; }
+    .jira-table {
+      table-layout: fixed !important;
+      width: 100% !important;
+      min-width: 760px !important;
+    }
+    .jira-table th:nth-child(1), .jira-table td:nth-child(1),
+    .jira-table th:nth-child(2), .jira-table td:nth-child(2) { width: 136px !important; }
+    .jira-table th:nth-child(3), .jira-table td:nth-child(3),
+    .jira-table th:nth-child(4), .jira-table td:nth-child(4) { width: 128px !important; }
+    .jira-table th:nth-child(6), .jira-table td:nth-child(6) { width: 46px !important; }
+    .jira-table .cell-input { min-height: 32px !important; height: 32px !important; border-radius: 10px !important; }
+    .jira-table .th-label-input { min-width: 0 !important; width: 100% !important; white-space: normal !important; line-height: 1.25 !important; }
+    .tasks-received-table {
+      table-layout: fixed !important;
+      width: 100% !important;
+      min-width: 1040px !important;
+    }
+    .tasks-received-table .cell-input,
+    .tasks-received-table .cell-select { min-height: 32px !important; height: 32px !important; }
+    .compact-table .cell-small { max-width: none !important; }
+    .table-wrap { scrollbar-gutter: stable; }
+
+
+
+    /* Fix 1: Tasks Received table header overlap */
+    .tasks-received-table {
+      table-layout: fixed !important;
+      min-width: 1360px !important;
+      width: 100% !important;
+    }
+    .tasks-received-table th,
+    .tasks-received-table td {
+      overflow: hidden !important;
+      vertical-align: middle !important;
+    }
+    .tasks-received-table th {
+      white-space: normal !important;
+      line-height: 1.18 !important;
+    }
+    .tasks-received-table .th-tools {
+      display: block !important;
+      white-space: normal !important;
+      min-width: 0 !important;
+    }
+    .tasks-received-table .th-label-input {
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      display: block !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+      padding-left: 2px !important;
+      padding-right: 2px !important;
+    }
+    .tasks-received-table th:nth-child(1), .tasks-received-table td:nth-child(1) { width: 135px !important; }
+    .tasks-received-table th:nth-child(2), .tasks-received-table td:nth-child(2) { width: 120px !important; }
+    .tasks-received-table th:nth-child(3), .tasks-received-table td:nth-child(3) { width: 340px !important; }
+    .tasks-received-table th:nth-child(4), .tasks-received-table td:nth-child(4) { width: 135px !important; }
+    .tasks-received-table th:nth-child(5), .tasks-received-table td:nth-child(5) { width: 140px !important; }
+    .tasks-received-table th:nth-child(6), .tasks-received-table td:nth-child(6) { width: 125px !important; }
+    .tasks-received-table th:nth-child(7), .tasks-received-table td:nth-child(7) { width: 105px !important; }
+    .tasks-received-table th:nth-child(8), .tasks-received-table td:nth-child(8) { width: 120px !important; }
+    .tasks-received-table th:nth-child(9), .tasks-received-table td:nth-child(9) { width: 110px !important; }
+    .tasks-received-table th:nth-child(10), .tasks-received-table td:nth-child(10) { width: 140px !important; }
+    .tasks-received-table th:nth-child(11), .tasks-received-table td:nth-child(11) { width: 46px !important; }
+    .tasks-received-table .cell-input,
+    .tasks-received-table .cell-select {
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      white-space: nowrap !important;
+    }
+
+    @media print {
+      body { background:#fff !important; color:#111827 !important; }
+      .topbar, .footer, .btn, .actions, .nav, .week-switcher, .section-tools, .mini-toolbar, .report-actions, #chartModal { display:none !important; }
+      .app { width:100% !important; margin:0 !important; padding:0 !important; }
+      .view { display:none !important; }
+      .view.active { display:block !important; }
+      .card, .hero { background:#fff !important; color:#111827 !important; border:1px solid #d1d5db !important; box-shadow:none !important; break-inside:avoid; }
+      .subtle, .entry-meta { color:#4b5563 !important; }
+      input, textarea, select { color:#111827 !important; background:#fff !important; border:0 !important; }
+      table { color:#111827 !important; }
+      th, td { border-color:#d1d5db !important; }
+      svg text { fill:#111827 !important; }
+    }
+
+    @media (max-width: 1160px) {
+      .team-grid, .four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .three { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .actions, .brand, .week-switcher { min-width: 0; }
+      .nav { justify-content: flex-start; }
+    }
+    @media (max-width: 760px) {
+      .app { width: min(100% - 20px, 1500px); }
+      .hero { padding: 22px; border-radius: 22px; }
+      .team-grid, .two, .three, .four { grid-template-columns: 1fr; }
+      .page-title { flex-direction: column; align-items: flex-start; }
+      .day-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Collapse controls for each important card/section */
+    .collapse-btn {
+      width: 30px;
+      min-width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      border: 1px solid var(--line-2);
+      background: var(--soft-surface);
+      color: var(--text);
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 6px;
+    }
+    .collapse-btn:hover { border-color: rgba(96,165,250,.55); }
+    .card.is-collapsed > :not(.card-head) { display: none !important; }
+    .card.is-collapsed { padding-bottom: 16px; }
+
+
+
+    /* Final sizing pass: reduce oversized typography and keep charts/tables readable */
+    body { font-size: 14px; }
+    .app { width: min(1540px, calc(100% - 28px)); }
+    .card { padding: 14px; border-radius: 16px; }
+    .section { margin-top: 14px; }
+    .page-title { margin: 16px 0 12px; }
+    .page-title h2 { font-size: clamp(22px, 2vw, 26px); line-height: 1.12; }
+    .team-card h3, .card h3, .card-head h3 { font-size: clamp(15px, 1.05vw, 17px); line-height: 1.18; }
+    .card-head { gap: 10px; margin-bottom: 10px; }
+    .subtle { font-size: 12px; line-height: 1.4; }
+    .btn { min-height: 34px; padding: 8px 10px; font-size: 13px; border-radius: 10px; }
+    .btn.small { min-height: 30px; padding: 6px 8px; font-size: 12px; }
+    .input, textarea, select { min-height: 34px; padding: 8px 9px; font-size: 13px; border-radius: 10px; }
+    textarea { min-height: 74px; }
+    .cell-input, .cell-select, .cell-small, .th-label-input { font-size: 12px; min-height: 32px; padding: 7px 8px; }
+    table th { font-size: 11.5px; padding: 8px 8px; }
+    table td { padding: 6px 7px; }
+    .kpi { min-height: 108px; gap: 6px; }
+    .kpi .value { font-size: 28px; }
+    .kpi .label { font-size: 11px; }
+    .chart-box { min-height: 240px; }
+    .chart-box.large { min-height: 520px; }
+    .chart-tools, .section-tools { gap: 6px; }
+    .subject-label { min-height: 34px; padding: 6px 8px; }
+    .card-head h3 .subject-label, .card-head .subject-label { font-size: clamp(15px, 1.05vw, 17px); }
+    .page-title .subject-label, h2 .subject-label { font-size: clamp(22px, 2vw, 26px); }
+    .collapse-btn { width: 28px; height: 28px; min-width: 28px; }
+
+
+    /* Final EN/AR + collapse + VDI polish */
+    .language-btn { min-width: 68px; }
+    body.lang-ar { direction: rtl; }
+    body.lang-ar input, body.lang-ar textarea, body.lang-ar select { text-align: right; }
+    body.lang-ar input[type="date"], body.lang-ar input[type="number"], body.lang-ar .numeric-text, body.lang-ar .cell-input[type="date"] { direction: ltr; text-align: left; }
+    body.lang-ar table { direction: rtl; }
+    body.lang-ar .chart-box svg { direction: ltr; }
+    body.lang-ar .brand, body.lang-ar .card-head, body.lang-ar .chart-card-head, body.lang-ar .page-title, body.lang-ar .week-switcher, body.lang-ar .actions, body.lang-ar .nav, body.lang-ar .section-tools, body.lang-ar .chart-tools { direction: rtl; }
+    .card-head { align-items: flex-start; }
+    .collapse-btn { flex: 0 0 auto; }
+    .top-analytics-card .chart-type-select option[value="area"][data-task-only-hidden] { display:none; }
+
+
+
+    /* Icon action polish: compact +, trash, refresh, and triangle collapse controls */
+    .btn.icon-btn,
+    .btn.add-btn,
+    .btn.trash-btn,
+    .btn.refresh-btn,
+    .collapse-btn {
+      width: 30px !important;
+      min-width: 30px !important;
+      max-width: 30px !important;
+      height: 30px !important;
+      min-height: 30px !important;
+      padding: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      line-height: 1 !important;
+      font-weight: 900 !important;
+      border-radius: 10px !important;
+    }
+    .btn.add-btn {
+      font-size: 18px !important;
+      color: var(--text) !important;
+      border-color: rgba(96,165,250,.36) !important;
+      background: linear-gradient(135deg, rgba(96,165,250,.18), rgba(34,197,94,.10)) !important;
+    }
+    .btn.add-btn::before { content: "+"; }
+    .btn.add-btn > * { display: none !important; }
+    .btn.trash-btn {
+      color: #fecaca !important;
+      border-color: rgba(248,113,113,.32) !important;
+      background: rgba(239,68,68,.10) !important;
+    }
+    .btn.refresh-btn {
+      color: var(--text) !important;
+      border-color: rgba(34,211,238,.30) !important;
+      background: rgba(34,211,238,.10) !important;
+      font-size: 15px !important;
+    }
+    .btn.refresh-btn::before { content: "⟳"; }
+    .btn.refresh-btn > * { display: none !important; }
+    .collapse-btn {
+      font-size: 16px !important;
+      color: var(--text) !important;
+      background: var(--soft-surface) !important;
+      border: 1px solid var(--line-2) !important;
+    }
+    .collapse-btn::before { content: "▾"; }
+    .card.is-collapsed > .card-head .collapse-btn::before { content: "▸"; }
+    body.lang-ar .collapse-btn::before { content: "▾"; }
+    body.lang-ar .card.is-collapsed > .card-head .collapse-btn::before { content: "◂"; }
+
+  
+
+    /* Requested patch: use full page width, widen tables, and keep collapse as triangle only */
+    .app { width: min(1920px, calc(100% - 8px)) !important; }
+    .table-wrap { overflow-x: auto !important; width: 100% !important; }
+    table { width: 100% !important; min-width: 100% !important; table-layout: auto !important; }
+    .tasks-received-table { min-width: 100% !important; table-layout: auto !important; }
+    .jira-table { min-width: 100% !important; table-layout: auto !important; }
+    .flex-th { min-width: 190px !important; }
+    .cell-input, .cell-select, .th-label-input { min-width: 0 !important; width: 100% !important; }
+    .chart-box svg text { white-space: normal !important; }
+    .collapse-btn,
+    .collapse-btn.add-btn,
+    .btn.collapse-btn,
+    .btn.add-btn.collapse-btn {
+      font-size: 0 !important;
+      text-indent: 0 !important;
+      width: 30px !important;
+      min-width: 30px !important;
+      max-width: 30px !important;
+      height: 30px !important;
+      min-height: 30px !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .collapse-btn::before,
+    .collapse-btn.add-btn::before,
+    .btn.collapse-btn::before,
+    .btn.add-btn.collapse-btn::before {
+      content: "▾" !important;
+      font-size: 16px !important;
+      line-height: 1 !important;
+      text-indent: 0 !important;
+    }
+    .card.is-collapsed > .card-head .collapse-btn::before,
+    .card.is-collapsed > .card-head .collapse-btn.add-btn::before {
+      content: "▸" !important;
+    }
+    .team3-daily-inputs .concern-entry { grid-template-columns: auto minmax(380px, 1fr) auto auto !important; }
+    .team3-daily-inputs textarea.concern-line-input { min-height: 38px !important; resize: vertical !important; }
+
+  
+
+    /* Targeted fix patch: comfortable tables, full chart names, and Team 3 routine style */
+    .app { width: min(1960px, calc(100% - 4px)) !important; }
+    .wide-table-card, .comfort-table-wrap { width: 100% !important; }
+    .comfort-table-wrap { overflow-x: auto !important; }
+    table.comfort-table,
+    .flexible-wide-table,
+    .tasks-received-table,
+    .jira-table {
+      table-layout: auto !important;
+      width: 100% !important;
+      min-width: 1320px !important;
+    }
+    .tasks-received-table { min-width: 1720px !important; }
+    .jira-table { min-width: 1180px !important; }
+    .flexible-wide-table { min-width: max(100%, 1280px) !important; }
+    .tasks-received-table th:nth-child(1), .tasks-received-table td:nth-child(1) { width: 150px !important; }
+    .tasks-received-table th:nth-child(2), .tasks-received-table td:nth-child(2) { width: 190px !important; }
+    .tasks-received-table th:nth-child(3), .tasks-received-table td:nth-child(3) { width: 390px !important; }
+    .tasks-received-table th:nth-child(4), .tasks-received-table td:nth-child(4),
+    .tasks-received-table th:nth-child(5), .tasks-received-table td:nth-child(5) { width: 150px !important; }
+    .tasks-received-table th:nth-child(6), .tasks-received-table td:nth-child(6),
+    .tasks-received-table th:nth-child(7), .tasks-received-table td:nth-child(7),
+    .tasks-received-table th:nth-child(8), .tasks-received-table td:nth-child(8) { width: 145px !important; }
+    .tasks-received-table th:nth-child(9), .tasks-received-table td:nth-child(9),
+    .tasks-received-table th:nth-child(10), .tasks-received-table td:nth-child(10) { width: 150px !important; }
+    .flex-th { min-width: 240px !important; }
+    .cell-input:not([type="number"]):not([type="date"]),
+    .routine-line-input,
+    .th-label-textarea {
+      min-width: 160px !important;
+    }
+    .th-label-input.th-label-textarea {
+      width: 100% !important;
+      min-height: 34px !important;
+      height: auto !important;
+      resize: vertical !important;
+      overflow: hidden !important;
+      white-space: normal !important;
+      text-overflow: clip !important;
+      line-height: 1.22 !important;
+      text-transform: none !important;
+      letter-spacing: .02em !important;
+      background: rgba(255,255,255,.025) !important;
+      border: 1px solid rgba(255,255,255,.08) !important;
+    }
+    .tasks-received-table .th-label-input,
+    .jira-table .th-label-input {
+      white-space: normal !important;
+      overflow: hidden !important;
+      text-overflow: clip !important;
+    }
+    .wide-name-chart-box { min-height: 360px !important; overflow: auto !important; }
+    .wide-name-chart { display: grid; gap: 10px; padding: 8px; min-width: 0; }
+    .wide-name-chart-head,
+    .wide-name-row {
+      display: grid;
+      grid-template-columns: minmax(260px, 34%) minmax(280px, 1fr) 70px;
+      gap: 12px;
+      align-items: center;
+    }
+    .wide-name-chart-head { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; font-weight: 800; }
+    .wide-name-label { color: var(--text); font-size: 13px; line-height: 1.28; overflow-wrap: anywhere; white-space: normal; }
+    .wide-name-track { height: 28px; border-radius: 999px; background: rgba(148,163,184,.13); border: 1px solid var(--line); overflow: hidden; }
+    .wide-name-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, rgba(96,165,250,.95), rgba(124,58,237,.78)); }
+    .wide-name-value { font-weight: 900; color: var(--text); text-align: right; }
+    .team2-system-layout { grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr) !important; }
+    .team3-routine-card {
+      border-color: rgba(56,189,248,.30) !important;
+      background: radial-gradient(circle at top left, rgba(56,189,248,.10), transparent 34%), linear-gradient(180deg, rgba(17,26,45,.96), rgba(10,16,28,.96)) !important;
+    }
+    body.theme-light .team3-routine-card {
+      border-color: rgba(2,132,199,.28) !important;
+      background: radial-gradient(circle at top left, rgba(2,132,199,.10), transparent 34%), linear-gradient(180deg, rgba(255,255,255,.98), rgba(241,245,249,.94)) !important;
+    }
+    .routine-list { display: grid; gap: 8px; }
+    .routine-entry {
+      min-height: 48px;
+      padding: 8px 9px 8px 12px;
+      border-color: rgba(56,189,248,.26) !important;
+      background: linear-gradient(90deg, rgba(56,189,248,.10), rgba(96,165,250,.035)) !important;
+      border-left: 4px solid var(--info) !important;
+      display: grid;
+      grid-template-columns: auto minmax(420px, 1fr) auto auto;
+      gap: 10px;
+      align-items: start;
+      box-shadow: none;
+    }
+    .routine-dot { width: 9px; height: 9px; border-radius: 999px; margin-top: 13px; background: var(--info); box-shadow: 0 0 0 4px rgba(56,189,248,.13); }
+    .routine-line-input {
+      min-height: 38px !important;
+      padding: 8px 9px !important;
+      border-radius: 10px !important;
+      background: rgba(7,11,19,.36) !important;
+      border: 1px solid rgba(56,189,248,.20) !important;
+      color: var(--text) !important;
+      width: 100%;
+      outline: none;
+      resize: vertical;
+      line-height: 1.45;
+    }
+    body.theme-light .routine-line-input { background: rgba(255,255,255,.84) !important; color: #0f172a !important; border-color: rgba(2,132,199,.25) !important; }
+    .routine-line-input:focus { border-color: rgba(56,189,248,.68) !important; box-shadow: 0 0 0 3px rgba(56,189,248,.11) !important; }
+    .routine-time { color: var(--muted); font-size: 11px; white-space: nowrap; padding-top: 9px; }
+    .routine-actions { padding-top: 3px; }
+    .collapse-btn, .collapse-btn.add-btn, .btn.collapse-btn, .btn.add-btn.collapse-btn { font-size: 0 !important; text-indent: 0 !important; }
+    .collapse-btn::before, .collapse-btn.add-btn::before, .btn.collapse-btn::before, .btn.add-btn.collapse-btn::before { content: "▾" !important; font-size: 16px !important; text-indent: 0 !important; }
+    .card.is-collapsed > .card-head .collapse-btn::before, .card.is-collapsed > .card-head .collapse-btn.add-btn::before { content: "▸" !important; }
+    @media (max-width: 900px) {
+      .wide-name-chart-head, .wide-name-row { grid-template-columns: 1fr; }
+      .wide-name-value { text-align: left; }
+      .team2-system-layout { grid-template-columns: 1fr !important; }
+      .routine-entry { grid-template-columns: auto 1fr; }
+      .routine-time, .routine-actions { grid-column: 2; }
+    }
+
+  </style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<div class="brand">
+<div class="logo">SX</div>
+<div>
+<h1>Offline Weekly Dashboard</h1>
+<p class="subtle" id="lastSavedLabel">Ready offline</p>
+</div>
+</div>
+<nav class="nav">
+<button class="btn small" onclick="showView('home')">Start</button>
+<button class="btn small" id="nav-team1" onclick="showView('team1')">Team 1</button>
+<button class="btn small" id="nav-team2" onclick="showView('team2')">Team 2</button>
+<button class="btn small" id="nav-team3" onclick="showView('team3')">Team 3</button>
+<button class="btn small primary" onclick="showView('overview')">Overview</button>
+</nav>
+<div class="week-switcher" id="weekSwitcher"></div>
+<div class="actions">
+<button class="btn small" onclick="exportJSON()">Export JSON</button>
+<button class="btn small" onclick="document.getElementById('importFile').click()">Import JSON</button>
+<button class="btn small" id="themeToggleBtn" onclick="toggleTheme()">Light Theme</button>
+<input accept="application/json,.json" class="hidden-file" id="importFile" onchange="importJSON(event)" type="file"/>
+</div>
+</header>
+<main>
+<section class="view active" id="home"></section>
+<section class="view" id="team1"></section>
+<section class="view" id="team2"></section>
+<section class="view" id="team3"></section>
+<section class="view" id="overview"></section>
+</main>
+<footer class="footer">Built by sxxiif</footer>
+</div>
+<div class="chart-modal-root" id="chartModal"></div>
+<noscript><div style="padding:16px;margin:16px;border:1px solid #ef4444;color:#ef4444;font-family:Arial,sans-serif;background:#fff;">JavaScript is disabled or blocked. This offline dashboard requires JavaScript to run.</div></noscript>
+<script>
+/* Offline Weekly Dashboard - clean stable app.js
+   Built for local/offline VDI use. No CDN, no network calls, no external libraries. */
+
+const STORAGE_KEY = 'sxxiif_offline_weekly_dashboard_clean_v2';
+const LEGACY_KEYS = ['sxxiif_offline_weekly_dashboard_v1'];
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+let currentView = 'home';
+let state;
+
+function uid() { return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+function nowStamp() { return new Date().toLocaleString(); }
+function todayISO() { return formatISODate(new Date()); }
+function esc(value) { return String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function number(value) { const n = Number(value); return Number.isFinite(n) ? n : 0; }
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function safeText(value) { return String(value ?? '').trim(); }
+
+function formatISODate(date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function parseISODate(value) {
+  const parts = String(value || todayISO()).split('-').map(Number);
+  return new Date(parts[0] || new Date().getFullYear(), (parts[1] || 1) - 1, parts[2] || 1);
+}
+function startOfWeekISO(value) {
+  const d = value instanceof Date ? new Date(value) : parseISODate(value || todayISO());
+  d.setHours(0,0,0,0);
+  const diff = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - diff);
+  return formatISODate(d);
+}
+function addDaysISO(value, days) { const d = parseISODate(value); d.setDate(d.getDate() + days); return formatISODate(d); }
+function formatShortDate(value) { return parseISODate(value).toLocaleDateString(undefined, {day:'2-digit', month:'short', year:'numeric'}); }
+function currentWeekStart() { state.meta.currentWeekStart = state.meta.currentWeekStart || startOfWeekISO(todayISO()); return state.meta.currentWeekStart; }
+function currentWeekLabel() { const s = currentWeekStart(); return `${formatShortDate(s)} - ${formatShortDate(addDaysISO(s, 6))}`; }
+function exportDateStamp() { return todayISO(); }
+function cleanFilename(value) { return String(value || 'dashboard').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'dashboard'; }
+
+function storageGet(key) { try { return window.localStorage ? localStorage.getItem(key) : null; } catch { return null; } }
+function storageSet(key, value) { try { if (!window.localStorage) return false; localStorage.setItem(key, value); return true; } catch { return false; } }
+
+
+function compactDefaultColumns() {
+  return {
+    team1TasksReceived: [
+      { id:'date', label:'Date', type:'date', system:true },
+      { id:'refNumber', label:'Ref Number', type:'text', system:true },
+      { id:'caseName', label:'Case Name', type:'text', system:true },
+      { id:'totalReceived', label:'Total Received', type:'number', system:true },
+      { id:'totalRecovered', label:'Total Recovered', type:'number', system:true },
+      { id:'complexity', label:'Complexity', type:'text', system:true },
+      { id:'urgent', label:'Urgent', type:'text', system:true },
+      { id:'saifCreated', label:'Saif.Created', type:'text', system:true },
+      { id:'progress', label:'Progress %', type:'number', system:true },
+      { id:'resultProgress', label:'Result Progress %', type:'number', system:true }
+    ],
+    team2Requested: [
+      { id:'taskName', label:'Task Name', type:'text' },
+      { id:'refNumber', label:'Ref Number', type:'text' },
+      { id:'requestedFrom', label:'Requested From', type:'text' },
+      { id:'notes', label:'Notes', type:'text' }
+    ],
+    team2Internal: [
+      { id:'taskName', label:'Task Name', type:'text' },
+      { id:'toolUsed', label:'Tool Used', type:'text' },
+      { id:'total', label:'Total', type:'number' },
+      { id:'comments', label:'Comments', type:'text' }
+    ],
+    team3Log: [
+      { id:'item', label:'Item / Name', type:'text' },
+      { id:'status', label:'Status', type:'text' },
+      { id:'notes', label:'Notes', type:'text' }
+    ],
+    tna: [
+      { id:'entry', label:'TNA Input', type:'text' },
+      { id:'date', label:'Date', type:'date' },
+      { id:'comment', label:'Comment', type:'text' }
+    ]
+  };
+}
+
+function createDefaultGlobal() {
+  return {
+    teamNames: { team1:'Team 1', team2:'Team 2', team3:'Team 3' },
+    labels: { team1:{}, team2:{}, team3:{}, overview:{} },
+    tables: compactDefaultColumns(),
+    chartSettings: { team1Tasks:'bar', team1Jira:'bar', team2Stats:'bar', team2System:'horizontal' }
+  };
+}
+
+function blankDaily() { const obj = {}; DAYS.forEach(d => obj[d] = []); return obj; }
+function newFlexRows(tableKey, sampleRows = []) {
+  const cols = state?.global?.tables?.[tableKey] || compactDefaultColumns()[tableKey] || [];
+  return sampleRows.map(sample => {
+    const values = {};
+    cols.forEach((c, i) => { values[c.id] = sample[c.id] ?? sample[i] ?? ''; });
+    return { id: uid(), values };
+  });
+}
+function createPersonnelRows(sampleRows = []) {
+  return sampleRows.map(r => ({ id: uid(), idValue:r.idValue || '', name:r.name || '', role:r.role || '' }));
+}
+function createAvailabilityRows(sampleRows = []) {
+  return sampleRows.map(r => ({ id: uid(), name:r.name || '', status:r.status || 'Available', from:r.from || todayISO(), to:r.to || todayISO(), notes:r.notes || '' }));
+}
+function createTnaRows(sampleRows = []) {
+  const cols = state?.global?.tables?.tna || compactDefaultColumns().tna;
+  return sampleRows.map(sample => {
+    const values = {};
+    cols.forEach((c, i) => { values[c.id] = sample[c.id] ?? sample[i] ?? ''; });
+    return { id: uid(), values };
+  });
+}
+
+function createEmptyWeek(weekStart) {
+  const weekEnd = addDaysISO(weekStart, 6);
+  const rangeText = `${formatShortDate(weekStart)} - ${formatShortDate(weekEnd)}`;
+  return {
+    createdAt: nowStamp(),
+    updatedAt: nowStamp(),
+    teams: {
+      team1: {
+        weeklySummary: `Weekly summary for ${rangeText}.`,
+        notes: '',
+        dailyTasks: blankDaily(),
+        concernsTitle: 'Team 1 Concerns',
+        concerns: [],
+        systemsActivity: [],
+        tasksReceived: [],
+        ongoingTasks: [],
+        urgentTasks: [],
+        recoveredSystems: [],
+        systemsOutcomes: [],
+        jiraFrom: weekStart,
+        jiraTo: weekEnd,
+        jiraRecords: [],
+        availability: [],
+        tnaRows: [],
+        personnelRows: []
+      },
+      team2: {
+        weeklySummary: `Weekly summary for ${rangeText}.`,
+        notes: '',
+        dailyTasks: blankDaily(),
+        tableRows: { team2Requested: [], team2Internal: [] },
+        statsRows: [],
+        resultRows: [],
+        systemRows: [],
+        availability: [],
+        tnaRows: [],
+        personnelRows: []
+      },
+      team3: {
+        weeklySummary: `Weekly summary for ${rangeText}.`,
+        notes: '',
+        dailyInputs: [],
+        operations: { group1: [], group2: [] },
+        tableRows: { team3Log: [] },
+        maintenanceEntries: [],
+        availability: [],
+        tnaRows: [],
+        personnelRows: []
+      }
+    }
+  };
+}
+
+function createDefaultState() {
+  const wk = startOfWeekISO(todayISO());
+  const base = { meta: { createdAt: nowStamp(), lastSaved: nowStamp(), currentWeekStart: wk, theme:'dark', collapsed:{} }, global: createDefaultGlobal(), weeks: {} };
+  state = base;
+  base.weeks[wk] = createEmptyWeek(wk);
+  // Small starter records. These are intentionally compact and easy to delete.
+  base.weeks[wk].teams.team1.concerns.push({ id:uid(), text:'', createdAt:nowStamp(), updatedAt:'' });
+  base.weeks[wk].teams.team1.jiraRecords.push({ id:uid(), from:wk, to:wk, totalTasks:0, recoveredTasks:0, notes:'' });
+  base.weeks[wk].teams.team2.tableRows.team2Requested = newFlexRows('team2Requested', [{}]);
+  base.weeks[wk].teams.team2.statsRows.push({ id:uid(), period:'Mon', input1Received:0, input1Analyzed:0, input2Received:0, input2Analyzed:0 });
+  base.weeks[wk].teams.team2.systemRows.push({ id:uid(), systemName:'System 1', count:0 });
+  base.weeks[wk].teams.team3.dailyInputs.push({ id:uid(), text:'', createdAt:nowStamp(), updatedAt:'' });
+  base.weeks[wk].teams.team3.operations.group1.push({ id:uid(), name:'Input name', status:'Green' });
+  return base;
+}
+
+function ensureGlobalSettings(s) {
+  s.global = s.global || createDefaultGlobal();
+  const defaults = createDefaultGlobal();
+  s.global.teamNames = { ...defaults.teamNames, ...(s.global.teamNames || {}) };
+  s.global.labels = s.global.labels || {};
+  ['team1','team2','team3','overview'].forEach(k => s.global.labels[k] = s.global.labels[k] || {});
+  s.global.tables = s.global.tables || {};
+  Object.entries(defaults.tables).forEach(([key, cols]) => {
+    if (!Array.isArray(s.global.tables[key]) || !s.global.tables[key].length) s.global.tables[key] = cols;
+    s.global.tables[key] = dedupeColumns(s.global.tables[key], cols);
+  });
+  s.global.chartSettings = { ...defaults.chartSettings, ...(s.global.chartSettings || {}) };
+}
+
+function dedupeColumns(cols, fallbackCols) {
+  const byId = new Map();
+  (cols || []).forEach(col => {
+    const id = safeText(col.id) || uid();
+    if (!byId.has(id)) byId.set(id, { id, label:safeText(col.label) || 'Column', type:validType(col.type), system:!!col.system });
+  });
+  // If somehow all columns were removed, restore compact defaults.
+  if (!byId.size) (fallbackCols || []).forEach(c => byId.set(c.id, {...c, type:validType(c.type)}));
+  return Array.from(byId.values());
+}
+function validType(type) { return ['text','number','date'].includes(type) ? type : 'text'; }
+
+function ensureWeekSchema(week, weekStart) {
+  const fresh = createEmptyWeek(weekStart);
+  week.createdAt = week.createdAt || nowStamp();
+  week.updatedAt = week.updatedAt || nowStamp();
+  week.teams = week.teams || {};
+  ['team1','team2','team3'].forEach(team => { week.teams[team] = week.teams[team] || fresh.teams[team]; });
+
+  const t1 = week.teams.team1;
+  Object.assign(t1, {
+    weeklySummary: t1.weeklySummary ?? fresh.teams.team1.weeklySummary,
+    notes: t1.notes ?? '',
+    dailyTasks: t1.dailyTasks || blankDaily(),
+    concernsTitle: t1.concernsTitle || 'Team 1 Concerns',
+    concerns: Array.isArray(t1.concerns) ? t1.concerns : [],
+    systemsActivity: Array.isArray(t1.systemsActivity) ? t1.systemsActivity : [],
+    tasksReceived: Array.isArray(t1.tasksReceived) ? t1.tasksReceived : [],
+    ongoingTasks: Array.isArray(t1.ongoingTasks) ? t1.ongoingTasks : [],
+    urgentTasks: Array.isArray(t1.urgentTasks) ? t1.urgentTasks : [],
+    recoveredSystems: Array.isArray(t1.recoveredSystems) ? t1.recoveredSystems : [],
+    systemsOutcomes: Array.isArray(t1.systemsOutcomes) ? t1.systemsOutcomes : [],
+    jiraFrom: t1.jiraFrom || weekStart,
+    jiraTo: t1.jiraTo || addDaysISO(weekStart,6),
+    jiraRecords: Array.isArray(t1.jiraRecords) ? t1.jiraRecords : [],
+    availability: Array.isArray(t1.availability) ? t1.availability : [],
+    tnaRows: Array.isArray(t1.tnaRows) ? t1.tnaRows : [],
+    personnelRows: Array.isArray(t1.personnelRows) ? t1.personnelRows : []
+  });
+  DAYS.forEach(d => t1.dailyTasks[d] = Array.isArray(t1.dailyTasks[d]) ? t1.dailyTasks[d] : []);
+
+  const t2 = week.teams.team2;
+  Object.assign(t2, {
+    weeklySummary: t2.weeklySummary ?? fresh.teams.team2.weeklySummary,
+    notes: t2.notes ?? '',
+    dailyTasks: t2.dailyTasks || blankDaily(),
+    tableRows: t2.tableRows || {},
+    statsRows: Array.isArray(t2.statsRows) ? t2.statsRows : [],
+    resultRows: Array.isArray(t2.resultRows) ? t2.resultRows : (Array.isArray(t2.resultsModules) ? t2.resultsModules.map(x => ({id:x.id || uid(), moduleName:x.moduleName || x.name || '', resultValue:number(x.resultValue ?? x.value)})) : []),
+    systemRows: Array.isArray(t2.systemRows) ? t2.systemRows : (Array.isArray(t2.systemResults) ? t2.systemResults.map(x => ({id:x.id || uid(), systemName:x.systemName || x.name || '', count:number(x.count)})) : []),
+    availability: Array.isArray(t2.availability) ? t2.availability : [],
+    tnaRows: Array.isArray(t2.tnaRows) ? t2.tnaRows : [],
+    personnelRows: Array.isArray(t2.personnelRows) ? t2.personnelRows : []
+  });
+  DAYS.forEach(d => t2.dailyTasks[d] = Array.isArray(t2.dailyTasks[d]) ? t2.dailyTasks[d] : []);
+  ['team2Requested','team2Internal'].forEach(k => t2.tableRows[k] = Array.isArray(t2.tableRows[k]) ? t2.tableRows[k] : []);
+
+  const t3 = week.teams.team3;
+  Object.assign(t3, {
+    weeklySummary: t3.weeklySummary ?? fresh.teams.team3.weeklySummary,
+    notes: t3.notes ?? '',
+    dailyInputs: Array.isArray(t3.dailyInputs) ? t3.dailyInputs : (Array.isArray(t3.bullets) ? t3.bullets : []),
+    operations: t3.operations || { group1:[], group2:[] },
+    tableRows: t3.tableRows || {},
+    maintenanceEntries: Array.isArray(t3.maintenanceEntries) ? t3.maintenanceEntries : [],
+    availability: Array.isArray(t3.availability) ? t3.availability : [],
+    tnaRows: Array.isArray(t3.tnaRows) ? t3.tnaRows : [],
+    personnelRows: Array.isArray(t3.personnelRows) ? t3.personnelRows : []
+  });
+  t3.operations.group1 = Array.isArray(t3.operations.group1) ? t3.operations.group1 : [];
+  t3.operations.group2 = Array.isArray(t3.operations.group2) ? t3.operations.group2 : [];
+  t3.tableRows.team3Log = Array.isArray(t3.tableRows.team3Log) ? t3.tableRows.team3Log : [];
+
+  // Keep every flexible row compatible with current global columns.
+  normalizeFlexRows(t2.tableRows.team2Requested, 'team2Requested');
+  normalizeFlexRows(t2.tableRows.team2Internal, 'team2Internal');
+  normalizeFlexRows(t3.tableRows.team3Log, 'team3Log');
+  [t1,t2,t3].forEach(t => normalizeFlexRows(t.tnaRows, 'tna'));
+  normalizeTaskReceivedRows(t1.tasksReceived);
+  return week;
+}
+
+function normalizeFlexRows(rows, tableKey) {
+  const cols = state?.global?.tables?.[tableKey] || [];
+  rows.forEach(row => {
+    row.id = row.id || uid();
+    row.values = row.values || {};
+    cols.forEach(col => { if (row.values[col.id] === undefined) row.values[col.id] = ''; });
+  });
+}
+function normalizeTaskReceivedRows(rows) {
+  const cols = state?.global?.tables?.team1TasksReceived || [];
+  rows.forEach(row => { row.id = row.id || uid(); cols.forEach(col => { if (row[col.id] === undefined) row[col.id] = ''; }); });
+}
+
+function migrateState(input) {
+  const base = input && typeof input === 'object' ? input : createDefaultState();
+  if (!base.meta) base.meta = {};
+  base.meta.currentWeekStart = base.meta.currentWeekStart || startOfWeekISO(todayISO());
+  base.meta.theme = base.meta.theme === 'light' ? 'light' : 'dark';
+  base.meta.collapsed = base.meta.collapsed || {};
+  if (!base.weeks || typeof base.weeks !== 'object') base.weeks = {};
+  ensureGlobalSettings(base);
+
+  // Migrate old shape where teams were at root.
+  const wk = startOfWeekISO(base.meta.currentWeekStart);
+  if (!base.weeks[wk]) {
+    if (base.teams) base.weeks[wk] = { createdAt: base.meta.createdAt || nowStamp(), updatedAt: base.meta.lastSaved || nowStamp(), teams: migrateLegacyTeams(base.teams) };
+    else base.weeks[wk] = createEmptyWeek(wk);
+  }
+  // Move old team names into global only once.
+  if (base.teams) {
+    ['team1','team2','team3'].forEach(k => {
+      const oldName = base.teams?.[k]?.name;
+      if (oldName && !base.global.teamNames[k]) base.global.teamNames[k] = oldName;
+      if (oldName && base.global.teamNames[k] === ({team1:'Team 1',team2:'Team 2',team3:'Team 3'}[k])) base.global.teamNames[k] = oldName;
+    });
+  }
+  Object.keys(base.weeks).forEach(weekKey => ensureWeekSchema(base.weeks[weekKey], weekKey));
+  delete base.teams; // prevent stale week-scoped settings from taking over
+  return base;
+}
+
+function migrateLegacyTeams(teams) {
+  const out = { team1:{}, team2:{}, team3:{} };
+  if (teams.team1) {
+    const t = teams.team1;
+    out.team1 = {
+      weeklySummary:t.weeklySummary || '', notes:t.notes || '', dailyTasks:t.dailyTasks || blankDaily(), concerns:t.concerns || [], concernsTitle:t.concernsTitle || 'Team 1 Concerns',
+      systemsActivity:t.systemsActivity || [], tasksReceived:t.tasksReceived || [], ongoingTasks:t.ongoingTasks || [], urgentTasks:t.urgentTasks || [], recoveredSystems:t.recoveredSystems || [], systemsOutcomes:t.systemsOutcomes || [],
+      jiraFrom:t.jiraFrom || currentWeekStart(), jiraTo:t.jiraTo || addDaysISO(currentWeekStart(),6), jiraRecords:t.jiraRecords || [], availability:t.availability || [],
+      tnaRows:migrateLegacyFlexRows(t.tnaTable?.rows, t.tnaTable?.columns, 'tna'), personnelRows:migrateLegacyPersonnel(t.personnelTable)
+    };
+  }
+  if (teams.team2) {
+    const t = teams.team2;
+    out.team2 = { weeklySummary:t.weeklySummary || '', notes:t.notes || '', dailyTasks:t.dailyTasks || blankDaily(), tableRows:{ team2Requested:migrateLegacyFlexRows(t.requestedTasksTable?.rows, t.requestedTasksTable?.columns, 'team2Requested'), team2Internal:migrateLegacyFlexRows(t.internalTaskTable?.rows, t.internalTaskTable?.columns, 'team2Internal') }, statsRows:t.statsRows || [], resultRows:t.resultsModules || t.resultRows || [], systemRows:t.systemResults || t.systemRows || [], availability:t.availability || [], tnaRows:migrateLegacyFlexRows(t.tnaTable?.rows, t.tnaTable?.columns, 'tna'), personnelRows:migrateLegacyPersonnel(t.personnelTable) };
+  }
+  if (teams.team3) {
+    const t = teams.team3;
+    out.team3 = { weeklySummary:t.weeklySummary || '', notes:t.notes || '', dailyInputs:t.dailyInputs || t.bullets || [], operations:t.operations || {group1:[], group2:[]}, tableRows:{team3Log:migrateLegacyFlexRows(t.logTable?.rows, t.logTable?.columns, 'team3Log')}, maintenanceEntries:t.maintenanceEntries || [], availability:t.availability || [], tnaRows:migrateLegacyFlexRows(t.tnaTable?.rows, t.tnaTable?.columns, 'tna'), personnelRows:migrateLegacyPersonnel(t.personnelTable) };
+  }
+  return out;
+}
+function migrateLegacyFlexRows(rows, legacyCols, tableKey) {
+  if (!Array.isArray(rows)) return [];
+  const currentCols = compactDefaultColumns()[tableKey] || [];
+  return rows.map(row => {
+    const values = {};
+    currentCols.forEach((c, i) => {
+      let val = '';
+      if (row.values) {
+        if (row.values[c.id] !== undefined) val = row.values[c.id];
+        else if (legacyCols?.[i]?.id && row.values[legacyCols[i].id] !== undefined) val = row.values[legacyCols[i].id];
+      }
+      values[c.id] = val;
+    });
+    return { id: row.id || uid(), values };
+  });
+}
+function migrateLegacyPersonnel(table) {
+  if (!table?.rows) return [];
+  const cols = table.columns || [];
+  const find = (keywords, fallback) => cols.find(c => keywords.some(k => String(c.label||'').toLowerCase().includes(k))) || cols[fallback] || cols[0];
+  const idCol = find(['id'], 0), nameCol = find(['name'], 1), roleCol = find(['role'], 2);
+  return table.rows.map(row => ({ id: row.id || uid(), idValue: row.values?.[idCol?.id] || '', name: row.values?.[nameCol?.id] || '', role: row.values?.[roleCol?.id] || '' }));
+}
+
+function loadState() {
+  try {
+    let raw = storageGet(STORAGE_KEY);
+    if (!raw) {
+      for (const key of LEGACY_KEYS) { raw = storageGet(key); if (raw) break; }
+    }
+    if (!raw) return createDefaultState();
+    const loaded = migrateState(JSON.parse(raw));
+    return loaded;
+  } catch (err) {
+    /* Start clean if saved data is unavailable or invalid. */
+    return createDefaultState();
+  }
+}
+function saveState() {
+  try {
+    state.meta.lastSaved = nowStamp();
+    state.weeks[currentWeekStart()] = ensureWeekSchema(state.weeks[currentWeekStart()] || createEmptyWeek(currentWeekStart()), currentWeekStart());
+    storageSet(STORAGE_KEY, JSON.stringify(state));
+  } catch (err) {
+    /* Keep dashboard usable even if localStorage is blocked. */
+  }
+  renderLastSaved();
+  renderWeekSwitcher();
+}
+
+function activeWeek() { const wk = currentWeekStart(); state.weeks[wk] = ensureWeekSchema(state.weeks[wk] || createEmptyWeek(wk), wk); return state.weeks[wk]; }
+function team(teamKey) { return activeWeek().teams[teamKey]; }
+function teamDisplayName(teamKey) { return state.global.teamNames[teamKey] || ({team1:'Team 1',team2:'Team 2',team3:'Team 3'}[teamKey] || teamKey); }
+function updateTeamName(teamKey, value) { state.global.teamNames[teamKey] = safeText(value) || ({team1:'Team 1',team2:'Team 2',team3:'Team 3'}[teamKey] || teamKey); saveState(); renderNavLabels(); }
+function getLabel(scope, key, fallback) { state.global.labels[scope] = state.global.labels[scope] || {}; return state.global.labels[scope][key] ?? fallback; }
+function updateLabel(scope, key, value) { state.global.labels[scope] = state.global.labels[scope] || {}; state.global.labels[scope][key] = value; saveState(); }
+function labelWidthStyle(value) { return `--label-width:${clamp(String(value||'').length + 3, 12, 86)}ch`; }
+function labelInput(scope, key, fallback, extraClass='') { const value = getLabel(scope, key, fallback); return `<input class="label-input subject-label ${extraClass}" value="${esc(value)}" style="${labelWidthStyle(value)}" oninput="updateLabel('${scope}','${key}',this.value);this.style.setProperty('--label-width', Math.max(12, Math.min(86, this.value.length + 3)) + 'ch')" title="Rename label">`; }
+function thLabel(scope, key, fallback) { const value = getLabel(scope, key, fallback); return `<textarea class="th-label-input th-label-textarea" rows="1" oninput="updateLabel('${scope}','${key}',this.value);autoGrow(this)" title="Rename column">${esc(value)}</textarea>`; }
+
+function applyTheme() { const light = state.meta.theme === 'light'; document.body.classList.toggle('theme-light', light); document.body.classList.toggle('theme-dark', !light); }
+function toggleTheme() { state.meta.theme = state.meta.theme === 'light' ? 'dark' : 'light'; saveState(); render(); }
+function renderThemeToggle() { const b = document.getElementById('themeToggleBtn'); if (b) b.textContent = state.meta.theme === 'light' ? 'Dark Theme' : 'Light Theme'; }
+function renderLastSaved() { const el = document.getElementById('lastSavedLabel'); if (el) el.textContent = 'Auto-saved locally: ' + (state.meta.lastSaved || 'not yet saved'); }
+function renderNavLabels() { ['team1','team2','team3'].forEach(k => { const b = document.getElementById('nav-' + k); if (b) b.textContent = teamDisplayName(k); }); }
+
+function showView(view) {
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const target = document.getElementById(view);
+  if (target) target.classList.add('active');
+  render();
+  try { window.scrollTo({top:0, behavior:'smooth'}); } catch { window.scrollTo(0,0); }
+}
+function render() {
+  activeWeek();
+  applyTheme(); renderThemeToggle(); renderLastSaved(); renderWeekSwitcher(); renderNavLabels();
+  renderHome();
+  if (currentView === 'team1') renderTeam1();
+  if (currentView === 'team2') renderTeam2();
+  if (currentView === 'team3') renderTeam3();
+  if (currentView === 'overview') renderOverview();
+  requestAnimationFrame(() => { autoGrowAll(); polishDeleteButtons(); });
+}
+function preserveScrollRender(fn) { const x = window.scrollX || 0, y = window.scrollY || 0; fn(); requestAnimationFrame(() => window.scrollTo(x, y)); }
+function renderCurrentViewPreservingScroll() { preserveScrollRender(render); }
+function autoGrow(el) { if (!el) return; el.style.height = 'auto'; el.style.height = Math.max(el.scrollHeight, 38) + 'px'; }
+function autoGrowAll() { document.querySelectorAll('textarea.auto-grow, textarea.th-label-textarea').forEach(autoGrow); }
+function polishDeleteButtons(root=document) { root.querySelectorAll('button.btn.danger').forEach(btn => { btn.classList.add('trash-btn'); btn.setAttribute('title', btn.getAttribute('title') || 'Delete'); btn.setAttribute('aria-label', btn.getAttribute('aria-label') || 'Delete'); btn.innerHTML = '🗑'; }); }
+
+function renderWeekSwitcher() {
+  const el = document.getElementById('weekSwitcher'); if (!el) return;
+  const start = currentWeekStart();
+  el.innerHTML = `<button class="btn small" onclick="changeWeek(-1)">← Previous</button><div class="week-chip"><span>Selected Week</span><strong>${esc(currentWeekLabel())}</strong></div><button class="btn small" onclick="changeWeek(1)">Next →</button><button class="btn small ghost" onclick="goToThisWeek()">This Week</button><input class="input week-date-input" type="date" value="${esc(start)}" onchange="selectWeekByDate(this.value)" title="Jump to week">`;
+}
+function changeWeek(offset) { openWeek(addDaysISO(currentWeekStart(), offset * 7)); }
+function goToThisWeek() { openWeek(startOfWeekISO(todayISO())); }
+function selectWeekByDate(value) { if (value) openWeek(value); }
+function openWeek(weekStart) { state.meta.currentWeekStart = startOfWeekISO(weekStart); activeWeek(); saveState(); render(); }
+
+function pageTitle(title, subtitle, actions='') { return `<div class="page-title"><div><h2>${esc(title)}</h2><p class="subtle">${esc(subtitle || '')}</p></div><div class="pill-row">${actions}</div></div>`; }
+function teamPageTitle(teamKey, actions='') { const name = teamDisplayName(teamKey); return `<div class="page-title"><div><h2><input class="label-input subject-label team-name-input" value="${esc(name)}" style="${labelWidthStyle(name)}" oninput="updateTeamName('${teamKey}',this.value);this.style.setProperty('--label-width', Math.max(12, Math.min(86, this.value.length + 3)) + 'ch')" title="Rename team"></h2><p class="subtle">Selected week: ${esc(currentWeekLabel())}</p></div><div class="pill-row">${actions}</div></div>`; }
+function reportButtons(target) { return `<div class="report-actions"><button class="btn small" onclick="exportWord('${target}')">Export Word</button><button class="btn small" onclick="printDashboard()">Export / Print PDF</button>${target !== 'overview' ? `<button class="btn small primary" onclick="showView('overview')">Open Overview</button>` : ''}</div>`; }
+function addButton(label, onclick, cls='') { return `<button type="button" class="btn small add-btn ${cls}" onclick="${onclick}" title="${esc(label)}" aria-label="${esc(label)}"></button>`; }
+function refreshButton(target='') { return `<button type="button" class="btn small refresh-btn" onclick="refreshGraphs('${target}')" title="Refresh"><span class="sr-only">Refresh</span></button>`; }
+function sectionCard(id, titleHtml, subtitle, actions, body, extraClass='') {
+  const collapsed = state.meta.collapsed?.[id] ? ' is-collapsed' : '';
+  return `<div class="card section ${extraClass}${collapsed}" id="${esc(id)}"><div class="card-head wrap"><div><h3>${titleHtml}</h3>${subtitle ? `<p class="subtle" style="margin-top:6px">${esc(subtitle)}</p>` : ''}</div><div class="section-tools">${actions || ''}<button type="button" class="collapse-btn" onclick="toggleCollapse('${id}')" title="Collapse / expand" aria-label="Collapse / expand"></button></div></div>${body}</div>`;
+}
+function toggleCollapse(id) { state.meta.collapsed = state.meta.collapsed || {}; state.meta.collapsed[id] = !state.meta.collapsed[id]; saveState(); const el = document.getElementById(id); if (el) el.classList.toggle('is-collapsed', state.meta.collapsed[id]); }
+
+function renderHome() {
+  const el = document.getElementById('home'); if (!el) return;
+  el.innerHTML = `<div class="hero"><h2>Weekly command center for offline team updates.</h2><p>Open the needed tab, update the selected week, export JSON for backup, and use Word/PDF export when needed.</p><div class="pill-row" style="margin-top:18px"><span class="pill"><span class="dot good"></span>Offline</span><span class="pill"><span class="dot"></span>Auto-save</span><span class="pill"><span class="dot warn"></span>Week history</span></div></div><div class="grid team-grid">${homeCard(teamDisplayName('team1'),'Daily work, systems, recovery, Jira and availability.','team1')}${homeCard(teamDisplayName('team2'),'Requests, statistics, results, system chart, TNA and availability.','team2')}${homeCard(teamDisplayName('team3'),'Routine daily inputs, operations status, logs, maintenance and availability.','team3')}${homeCard('Overview','Clean summary of the selected week.','overview', true)}</div>`;
+}
+function homeCard(title, body, view, primary=false) { return `<div class="card team-card"><div><h3>${esc(title)}</h3><p class="subtle" style="margin-top:10px">${esc(body)}</p></div><button class="btn ${primary ? 'primary' : ''}" onclick="showView('${view}')">Open ${esc(title)}</button></div>`; }
+
+function renderEditableSummary(teamKey) {
+  const t = team(teamKey);
+  return `<div class="grid two section"><div class="card"><div class="card-head"><h3>${labelInput(teamKey,'weeklySummaryTitle','Weekly Summary')}</h3></div><textarea class="auto-grow" oninput="updateTeamField('${teamKey}','weeklySummary',this.value);autoGrow(this)">${esc(t.weeklySummary)}</textarea></div><div class="card"><div class="card-head"><h3>${labelInput(teamKey,'teamNotesTitle','Team Notes')}</h3></div><textarea class="auto-grow" oninput="updateTeamField('${teamKey}','notes',this.value);autoGrow(this)">${esc(t.notes)}</textarea></div></div>`;
+}
+function updateTeamField(teamKey, field, value) { team(teamKey)[field] = value; saveState(); }
+
+function renderTeam1() {
+  const el = document.getElementById('team1'); if (!el) return;
+  el.innerHTML = `${teamPageTitle('team1', reportButtons('team1'))}${renderEditableSummary('team1')}${renderTeam1Charts()}${renderTeam1DailyTasks()}${renderTeam1Concerns()}${renderSystemsActivity()}${renderTeam1TasksReceived()}${renderTeam1TaskLists()}${renderSystemsOutcomes()}${renderJiraSection()}${renderAvailability('team1')}${renderTnaSection('team1')}${renderPersonnelSection('team1')}`;
+}
+function renderTeam1Charts() {
+  return `<div class="grid two section analytics-split"><div class="card top-analytics-card"><div class="chart-card-head"><div>${labelInput('team1','chart.tasksTitle','Tasks Received / Recovered')}<p class="subtle" style="margin-top:6px">Based on Tasks Received rows in the selected Jira date range.</p></div><div class="chart-tools"><button class="btn small" onclick="openChartModal('tasks')">Bigger</button>${refreshButton('tasks')}</div></div><div class="chart-box">${renderTasksChart()}</div></div><div class="card top-analytics-card"><div class="chart-card-head"><div>${labelInput('team1','chart.jiraTitle','Jira Total / Recovered')}<p class="subtle" style="margin-top:6px">Based on Jira records and selected date range.</p></div><div class="chart-tools"><button class="btn small" onclick="openChartModal('jira')">Bigger</button>${refreshButton('jira')}</div></div><div class="chart-box">${renderJiraChart()}</div></div></div>`;
+}
+function renderTeam1DailyTasks() {
+  const t = team('team1');
+  const body = `<div class="grid day-grid">${DAYS.map(day => `<div class="card day-card"><div class="card-head"><h3>${esc(day)}</h3>${addButton('Add daily task', `addDailyTask('${day}')`)}</div>${(t.dailyTasks[day] || []).map(e => `<div class="entry"><div class="entry-meta"><span>Created: ${esc(e.createdAt)}</span>${e.updatedAt ? `<span>Updated: ${esc(e.updatedAt)}</span>` : ''}</div><textarea class="auto-grow daily-task-textarea" oninput="updateDailyTask('${day}','${e.id}',this.value);autoGrow(this)">${esc(e.text)}</textarea><div style="margin-top:8px"><button class="btn small danger" onclick="deleteDailyTask('${day}','${e.id}')"></button></div></div>`).join('') || '<div class="empty">No entries yet.</div>'}</div>`).join('')}</div>`;
+  return sectionCard('team1-daily', labelInput('team1','section.dailyTasks','1.1 Daily Tasks'), 'Each weekday supports timestamped entries.', '', body);
+}
+function addDailyTask(day) { team('team1').dailyTasks[day].push({id:uid(), text:'', createdAt:nowStamp(), updatedAt:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateDailyTask(day, id, value) { const item = team('team1').dailyTasks[day].find(x => x.id === id); if (!item) return; item.text = value; item.updatedAt = nowStamp(); saveState(); }
+function deleteDailyTask(day, id) { team('team1').dailyTasks[day] = team('team1').dailyTasks[day].filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderTeam1Concerns() {
+  const t = team('team1');
+  const body = `<div class="concern-list">${t.concerns.map(c => `<div class="entry concern-entry"><span class="concern-dot"></span><input class="concern-line-input" value="${esc(c.text)}" oninput="updateConcern('${c.id}',this.value)" placeholder="Write concern here"><span class="concern-time">${esc(c.updatedAt ? 'Updated: ' + c.updatedAt : 'Created: ' + c.createdAt)}</span><div class="concern-actions"><button class="btn small danger" onclick="deleteArrayItem('team1','concerns','${c.id}')"></button></div></div>`).join('') || '<div class="empty">No concerns added.</div>'}</div>`;
+  return sectionCard('team1-concerns', `<input class="input inline-input" value="${esc(t.concernsTitle)}" oninput="team('team1').concernsTitle=this.value;saveState();">`, 'Amber concern highlights.', addButton('Add concern', 'addConcern()'), body, 'concern-card');
+}
+function addConcern() { team('team1').concerns.push({id:uid(), text:'', createdAt:nowStamp(), updatedAt:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateConcern(id, value) { const c = team('team1').concerns.find(x => x.id === id); if (!c) return; c.text = value; c.updatedAt = nowStamp(); saveState(); }
+
+function renderSystemsActivity() {
+  const rows = team('team1').systemsActivity;
+  const body = `<div class="table-wrap comfort-table-wrap"><table class="comfort-table"><thead><tr><th>${thLabel('team1','systems.systemName','System Name')}</th><th>${thLabel('team1','systems.description','Description')}</th><th>${thLabel('team1','systems.active','Machines Active')}</th><th>${thLabel('team1','systems.inactive','Machines Inactive')}</th><th>${thLabel('team1','systems.status','Status')}</th><th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(r => `<tr><td><input class="cell-input" value="${esc(r.systemName)}" oninput="updateTeam1Array('systemsActivity','${r.id}','systemName',this.value)"></td><td><input class="cell-input" value="${esc(r.description)}" oninput="updateTeam1Array('systemsActivity','${r.id}','description',this.value)"></td><td><input class="cell-input cell-small" type="number" value="${esc(r.active)}" oninput="updateTeam1Array('systemsActivity','${r.id}','active',this.value,true)" onchange="renderCurrentViewPreservingScroll()"></td><td><input class="cell-input cell-small" type="number" value="${esc(r.inactive)}" oninput="updateTeam1Array('systemsActivity','${r.id}','inactive',this.value,true)" onchange="renderCurrentViewPreservingScroll()"></td><td>${machineStatusBadge(r.active,r.inactive)}</td><td class="action-col"><button class="btn small danger" onclick="deleteArrayItem('team1','systemsActivity','${r.id}')"></button></td></tr>`).join('') || `<tr><td colspan="6"><div class="empty">No systems added.</div></td></tr>`}</tbody></table></div>`;
+  return sectionCard('team1-systems', labelInput('team1','section.systems','1.3 Systems / Machines Activity'), 'Status updates from active/inactive machine counts.', addButton('Add system','addSystemActivity()'), body, 'wide-table-card');
+}
+function machineStatusBadge(active, inactive) { active=number(active); inactive=number(inactive); if (active>0 && inactive===0) return '<span class="status-badge status-good"><span class="dot good"></span>All Active</span>'; if (inactive>0 && active===0) return '<span class="status-badge status-bad"><span class="dot bad"></span>Inactive</span>'; if (active>0 && inactive>0) return '<span class="status-badge status-warn"><span class="dot warn"></span>Partial</span>'; return '<span class="status-badge"><span class="dot"></span>No Data</span>'; }
+function addSystemActivity() { team('team1').systemsActivity.push({id:uid(), systemName:'', description:'', active:0, inactive:0}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateTeam1Array(arrayName, id, field, value, numeric=false) { const item = team('team1')[arrayName].find(x => x.id === id); if (!item) return; item[field] = numeric ? number(value) : value; saveState(); }
+
+function renderTeam1TasksReceived() {
+  const cols = state.global.tables.team1TasksReceived;
+  const rows = team('team1').tasksReceived;
+  const body = `<div class="table-wrap comfort-table-wrap"><table class="tasks-received-table"><thead><tr>${cols.map(col => `<th>${thLabel('team1','tasksReceived.'+col.id,col.label)}</th>`).join('')}<th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(row => `<tr>${cols.map(col => `<td>${renderTaskReceivedCell(row, col)}</td>`).join('')}<td class="action-col"><button class="btn small danger" onclick="deleteArrayItem('team1','tasksReceived','${row.id}')"></button></td></tr>`).join('') || `<tr><td colspan="${cols.length+1}"><div class="empty">No rows added.</div></td></tr>`}</tbody></table></div>`;
+  return sectionCard('team1-tasks-received', labelInput('team1','section.tasksReceived','A. Tasks Received This Week'), 'Manual typing only. Date and number columns keep native input types.', addButton('Add row','addTaskReceived()'), body, 'wide-table-card');
+}
+function renderTaskReceivedCell(row, col) { const type = col.type === 'date' ? 'date' : (col.type === 'number' ? 'number' : 'text'); return `<input class="cell-input ${type==='number'?'cell-small':''}" type="${type}" value="${esc(row[col.id] ?? '')}" oninput="updateTaskReceived('${row.id}','${col.id}',this.value,'${type}')">`; }
+function addTaskReceived() { const row = {id:uid()}; state.global.tables.team1TasksReceived.forEach(c => row[c.id] = c.type === 'date' ? todayISO() : (c.type === 'number' ? 0 : '')); team('team1').tasksReceived.push(row); saveState(); renderCurrentViewPreservingScroll(); }
+function updateTaskReceived(id, field, value, type) { const row = team('team1').tasksReceived.find(x => x.id === id); if (!row) return; row[field] = type === 'number' ? number(value) : value; saveState(); }
+
+function renderTeam1TaskLists() {
+  return `<div class="grid three section">${renderSmallList('team1','ongoingTasks','section.ongoing','B. Ongoing Tasks',['name','owner','status','progress'])}${renderSmallList('team1','urgentTasks','section.urgent','C. Urgent Tasks',['name','deadline','owner','status','progress'])}${renderSmallList('team1','recoveredSystems','section.recovered','D. Recovered Systems',['systemName','recoveredCount','date','notes'])}</div>`;
+}
+function fieldLabel(field) { return ({name:'Name',owner:'Owner',status:'Status',progress:'Progress %',deadline:'Deadline',systemName:'System Name',recoveredCount:'Recovered Count',date:'Date',notes:'Notes'}[field] || field); }
+function renderSmallList(teamKey, arrayName, titleKey, title, fields) {
+  const rows = team(teamKey)[arrayName] || [];
+  return `<div class="card"><div class="card-head"><h3>${labelInput(teamKey,titleKey,title)}</h3>${addButton('Add', `addSmallListItem('${teamKey}','${arrayName}')`)}</div>${rows.map(r => `<div class="entry">${fields.map(f => smallField(teamKey,arrayName,r,f)).join('')}<button style="margin-top:8px" class="btn small danger" onclick="deleteArrayItem('${teamKey}','${arrayName}','${r.id}')"></button></div>`).join('') || '<div class="empty">No rows yet.</div>'}</div>`;
+}
+function smallField(teamKey, arrayName, row, field) { const type = ['progress','recoveredCount'].includes(field) ? 'number' : (['deadline','date'].includes(field) ? 'date' : 'text'); return `<label class="subtle">${esc(fieldLabel(field))}<input class="input" type="${type}" value="${esc(row[field] ?? '')}" oninput="updateArrayItem('${teamKey}','${arrayName}','${row.id}','${field}',this.value,'${type}')"></label>`; }
+function addSmallListItem(teamKey, arrayName) { const defaults = {ongoingTasks:{name:'',owner:'',status:'',progress:0},urgentTasks:{name:'',deadline:todayISO(),owner:'',status:'',progress:0},recoveredSystems:{systemName:'',recoveredCount:0,date:todayISO(),notes:''}}; team(teamKey)[arrayName].push({id:uid(), ...(defaults[arrayName] || {})}); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderSystemsOutcomes() {
+  const rows = team('team1').systemsOutcomes;
+  const body = `<div class="grid three">${rows.map(r => `<div class="card"><div class="card-head"><input class="input" value="${esc(r.systemName || '')}" oninput="updateTeam1Array('systemsOutcomes','${r.id}','systemName',this.value)"><button class="btn small danger" onclick="deleteArrayItem('team1','systemsOutcomes','${r.id}')"></button></div><textarea class="auto-grow" oninput="updateTeam1Array('systemsOutcomes','${r.id}','statusLine',this.value);autoGrow(this)">${esc(r.statusLine || '')}</textarea><div class="metric-strip"><div class="mini-metric"><input class="input" type="number" value="${esc(r.activeTasks||0)}" oninput="updateTeam1Array('systemsOutcomes','${r.id}','activeTasks',this.value,true)"><span>Active</span></div><div class="mini-metric"><input class="input" type="number" value="${esc(r.pending||0)}" oninput="updateTeam1Array('systemsOutcomes','${r.id}','pending',this.value,true)"><span>Pending</span></div><div class="mini-metric"><input class="input" type="number" value="${esc(r.completed||0)}" oninput="updateTeam1Array('systemsOutcomes','${r.id}','completed',this.value,true)"><span>Completed</span></div></div></div>`).join('') || '<div class="empty">No system outcomes yet.</div>'}</div>`;
+  return sectionCard('team1-outcomes', labelInput('team1','section.outcomes','1.5 Systems Outcomes'), 'Editable outcome cards.', addButton('Add system','addSystemOutcome()'), body);
+}
+function addSystemOutcome() { team('team1').systemsOutcomes.push({id:uid(), systemName:'', statusLine:'', activeTasks:0, pending:0, completed:0}); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderJiraSection() {
+  const t = team('team1');
+  const rows = t.jiraRecords;
+  const body = `<div class="grid two"><label class="subtle">${labelInput('team1','jira.fromFilter','From Date')}<input class="input" type="date" value="${esc(t.jiraFrom)}" oninput="t1Set('jiraFrom',this.value)" onchange="renderCurrentViewPreservingScroll()"></label><label class="subtle">${labelInput('team1','jira.toFilter','To Date')}<input class="input" type="date" value="${esc(t.jiraTo)}" oninput="t1Set('jiraTo',this.value)" onchange="renderCurrentViewPreservingScroll()"></label></div><div class="table-wrap comfort-table-wrap" style="margin-top:12px"><table class="jira-table"><thead><tr><th>${thLabel('team1','jira.from','From Date')}</th><th>${thLabel('team1','jira.to','To Date')}</th><th>${thLabel('team1','jira.total','Total Tasks Count')}</th><th>${thLabel('team1','jira.recovered','Recovered Tasks Count')}</th><th>${thLabel('team1','jira.notes','Notes')}</th><th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(r => `<tr><td><input class="cell-input" type="date" value="${esc(r.from)}" oninput="updateJira('${r.id}','from',this.value)"></td><td><input class="cell-input" type="date" value="${esc(r.to)}" oninput="updateJira('${r.id}','to',this.value)"></td><td><input class="cell-input" type="number" value="${esc(r.totalTasks)}" oninput="updateJira('${r.id}','totalTasks',this.value,true)"></td><td><input class="cell-input" type="number" value="${esc(r.recoveredTasks)}" oninput="updateJira('${r.id}','recoveredTasks',this.value,true)"></td><td><input class="cell-input" value="${esc(r.notes||'')}" oninput="updateJira('${r.id}','notes',this.value)"></td><td class="action-col"><button class="btn small danger" onclick="deleteArrayItem('team1','jiraRecords','${r.id}')"></button></td></tr>`).join('') || '<tr><td colspan="6"><div class="empty">No Jira records.</div></td></tr>'}</tbody></table></div>`;
+  return sectionCard('team1-jira', labelInput('team1','section.jira','1.6 Jira Inputs / Range Data'), 'Charts use this selected date range.', addButton('Add range','addJiraRecord()'), body, 'wide-table-card');
+}
+function t1Set(field, value) { team('team1')[field] = value; saveState(); }
+function addJiraRecord() { team('team1').jiraRecords.push({id:uid(), from:todayISO(), to:todayISO(), totalTasks:0, recoveredTasks:0, notes:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateJira(id, field, value, numeric=false) { const r = team('team1').jiraRecords.find(x => x.id === id); if (!r) return; r[field] = numeric ? number(value) : value; saveState(); }
+
+function renderTeam2() {
+  const el = document.getElementById('team2'); if (!el) return;
+  el.innerHTML = `${teamPageTitle('team2', reportButtons('team2'))}${renderEditableSummary('team2')}${renderDailyEntries('team2','2.1 Daily Tasks')}${renderFlexTable('team2','team2Requested','team2.requestedTitle','2.2 Requested Tasks Table','Compact flexible table. Add only needed columns.')}${renderTeam2Stats()}${renderTeam2Results()}${renderTeam2SystemGraph()}${renderFlexTable('team2','team2Internal','team2.internalTitle','2.6 Internal Task Table','Compact flexible table.')}${renderAvailability('team2')}${renderTnaSection('team2')}${renderPersonnelSection('team2')}`;
+}
+function renderDailyEntries(teamKey, fallbackTitle) {
+  const t = team(teamKey);
+  const body = `<div class="grid day-grid">${DAYS.map(day => `<div class="card day-card"><div class="card-head"><h3>${esc(day)}</h3>${addButton('Add entry', `addTeamDailyEntry('${teamKey}','${day}')`)}</div>${(t.dailyTasks[day] || []).map(e => `<div class="entry"><div class="entry-meta"><span>Created: ${esc(e.createdAt)}</span>${e.updatedAt ? `<span>Updated: ${esc(e.updatedAt)}</span>` : ''}</div><textarea class="auto-grow daily-task-textarea" oninput="updateTeamDailyEntry('${teamKey}','${day}','${e.id}',this.value);autoGrow(this)">${esc(e.text)}</textarea><div style="margin-top:8px"><button class="btn small danger" onclick="deleteTeamDailyEntry('${teamKey}','${day}','${e.id}')"></button></div></div>`).join('') || '<div class="empty">No entries yet.</div>'}</div>`).join('')}</div>`;
+  return sectionCard(`${teamKey}-daily`, labelInput(teamKey,'section.dailyTasks',fallbackTitle), 'Weekday daily entries.', '', body);
+}
+function addTeamDailyEntry(teamKey, day) { team(teamKey).dailyTasks[day].push({id:uid(), text:'', createdAt:nowStamp(), updatedAt:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateTeamDailyEntry(teamKey, day, id, value) { const item = team(teamKey).dailyTasks[day].find(x => x.id === id); if (!item) return; item.text = value; item.updatedAt = nowStamp(); saveState(); }
+function deleteTeamDailyEntry(teamKey, day, id) { team(teamKey).dailyTasks[day] = team(teamKey).dailyTasks[day].filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderFlexTable(teamKey, tableKey, titleKey, fallbackTitle, subtitle) {
+  const rows = getTableRows(teamKey, tableKey);
+  const cols = state.global.tables[tableKey];
+  const body = `<div class="table-wrap comfort-table-wrap"><table class="flexible-wide-table"><thead><tr>${cols.map(col => `<th class="flex-th"><div class="flex-th-row"><textarea class="th-label-input th-label-textarea" rows="1" oninput="updateFlexColumn('${tableKey}','${col.id}','label',this.value);autoGrow(this)">${esc(col.label)}</textarea><button class="remove-col-btn" onclick="deleteFlexColumn('${tableKey}','${col.id}')" title="Remove column">×</button></div></th>`).join('')}<th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(row => `<tr>${cols.map(col => `<td>${renderFlexCell(teamKey, tableKey, row, col)}</td>`).join('')}<td class="action-col"><button class="btn small danger" onclick="deleteFlexRow('${teamKey}','${tableKey}','${row.id}')"></button></td></tr>`).join('') || `<tr><td colspan="${cols.length+1}"><div class="empty">No rows yet.</div></td></tr>`}</tbody></table></div>`;
+  return sectionCard(`${teamKey}-${tableKey}`, labelInput(teamKey,titleKey,fallbackTitle), subtitle, `${addButton('Add row', `addFlexRow('${teamKey}','${tableKey}')`)}${addButton('Add column', `addFlexColumn('${tableKey}')`)}`, body, 'wide-table-card');
+}
+function getTableRows(teamKey, tableKey) {
+  const t = team(teamKey);
+  if (tableKey === 'tna') return t.tnaRows;
+  if (!t.tableRows) t.tableRows = {};
+  t.tableRows[tableKey] = t.tableRows[tableKey] || [];
+  normalizeFlexRows(t.tableRows[tableKey], tableKey);
+  return t.tableRows[tableKey];
+}
+function renderFlexCell(teamKey, tableKey, row, col) { const type = col.type === 'date' ? 'date' : (col.type === 'number' ? 'number' : 'text'); return `<input class="cell-input ${type==='number'?'cell-small':''}" type="${type}" value="${esc(row.values?.[col.id] ?? '')}" oninput="updateFlexCell('${teamKey}','${tableKey}','${row.id}','${col.id}',this.value,'${type}')">`; }
+function addFlexRow(teamKey, tableKey) { const values = {}; state.global.tables[tableKey].forEach(c => values[c.id] = c.type === 'date' ? todayISO() : (c.type === 'number' ? 0 : '')); getTableRows(teamKey, tableKey).push({id:uid(), values}); saveState(); renderCurrentViewPreservingScroll(); }
+function deleteFlexRow(teamKey, tableKey, rowId) { const rows = getTableRows(teamKey, tableKey); const filtered = rows.filter(r => r.id !== rowId); if (tableKey === 'tna') team(teamKey).tnaRows = filtered; else team(teamKey).tableRows[tableKey] = filtered; saveState(); renderCurrentViewPreservingScroll(); }
+function updateFlexCell(teamKey, tableKey, rowId, colId, value, type) { const row = getTableRows(teamKey, tableKey).find(r => r.id === rowId); if (!row) return; row.values = row.values || {}; row.values[colId] = type === 'number' ? number(value) : value; saveState(); }
+function addFlexColumn(tableKey) { const label = 'New Column'; const id = 'col_' + uid(); state.global.tables[tableKey].push({id,label,type:'text'}); Object.values(state.weeks).forEach(w => ['team1','team2','team3'].forEach(k => { const t = w.teams?.[k]; if (!t) return; const rows = tableKey === 'tna' ? t.tnaRows : t.tableRows?.[tableKey]; if (Array.isArray(rows)) rows.forEach(r => { r.values = r.values || {}; r.values[id] = ''; }); })); saveState(); renderCurrentViewPreservingScroll(); }
+function updateFlexColumn(tableKey, colId, field, value) { const col = state.global.tables[tableKey].find(c => c.id === colId); if (!col) return; col[field] = field === 'type' ? validType(value) : value; saveState(); }
+function deleteFlexColumn(tableKey, colId) { const cols = state.global.tables[tableKey]; if (cols.length <= 1) { alert('At least one column is required.'); return; } state.global.tables[tableKey] = cols.filter(c => c.id !== colId); Object.values(state.weeks).forEach(w => ['team1','team2','team3'].forEach(k => { const t = w.teams?.[k]; const rows = tableKey === 'tna' ? t?.tnaRows : t?.tableRows?.[tableKey]; if (Array.isArray(rows)) rows.forEach(r => { if (r.values) delete r.values[colId]; }); })); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderTeam2Stats() {
+  const rows = team('team2').statsRows;
+  const body = `<div class="chart-box">${renderTeam2StatsChart()}</div><div class="table-wrap comfort-table-wrap" style="margin-top:12px"><table class="comfort-table"><thead><tr><th>${thLabel('team2','stats.period','Period')}</th><th>${thLabel('team2','stats.i1r','Input 1 Received')}</th><th>${thLabel('team2','stats.i1a','Input 1 Analyzed')}</th><th>${thLabel('team2','stats.i2r','Input 2 Received')}</th><th>${thLabel('team2','stats.i2a','Input 2 Analyzed')}</th><th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(r => `<tr><td><input class="cell-input" value="${esc(r.period)}" oninput="updateStats('${r.id}','period',this.value)"></td><td><input class="cell-input" type="number" value="${esc(r.input1Received)}" oninput="updateStats('${r.id}','input1Received',this.value,true)"></td><td><input class="cell-input" type="number" value="${esc(r.input1Analyzed)}" oninput="updateStats('${r.id}','input1Analyzed',this.value,true)"></td><td><input class="cell-input" type="number" value="${esc(r.input2Received)}" oninput="updateStats('${r.id}','input2Received',this.value,true)"></td><td><input class="cell-input" type="number" value="${esc(r.input2Analyzed)}" oninput="updateStats('${r.id}','input2Analyzed',this.value,true)"></td><td class="action-col"><button class="btn small danger" onclick="deleteStats('${r.id}')"></button></td></tr>`).join('') || '<tr><td colspan="6"><div class="empty">No statistics rows.</div></td></tr>'}</tbody></table></div>`;
+  return sectionCard('team2-stats', labelInput('team2','team2.statsTitle','2.3 Statistics - Graph'), 'Received vs analyzed per period.', `${addButton('Add period','addStatsRow()')}<button class="btn small" onclick="openAnyChartModal('team2Stats')">Bigger</button>${refreshButton('team2Stats')}`, body, 'wide-table-card');
+}
+function addStatsRow() { team('team2').statsRows.push({id:uid(), period:'', input1Received:0, input1Analyzed:0, input2Received:0, input2Analyzed:0}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateStats(id, field, value, numeric=false) { const r = team('team2').statsRows.find(x => x.id === id); if (!r) return; r[field] = numeric ? number(value) : value; saveState(); }
+function deleteStats(id) { team('team2').statsRows = team('team2').statsRows.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderTeam2Results() {
+  const rows = team('team2').resultRows;
+  const body = `<div class="grid two"><div class="chart-box wide-name-chart-box">${renderWideNameChart(rows.map(r => ({label:r.moduleName, value:number(r.resultValue)})))}</div><div>${rows.map(r => `<div class="entry"><div class="grid two"><input class="input" value="${esc(r.moduleName||'')}" oninput="updateResult('${r.id}','moduleName',this.value)"><input class="input" type="number" value="${esc(r.resultValue||0)}" oninput="updateResult('${r.id}','resultValue',this.value,true)"></div><button style="margin-top:8px" class="btn small danger" onclick="deleteResult('${r.id}')"></button></div>`).join('') || '<div class="empty">No results yet.</div>'}</div></div>`;
+  return sectionCard('team2-results', labelInput('team2','team2.resultsTitle','2.4 Name Results - Chart'), 'Full names are shown beside horizontal bars.', `${addButton('Add result','addResult()')}<button class="btn small" onclick="openAnyChartModal('team2Results')">Bigger</button>${refreshButton('team2Results')}`, body);
+}
+function addResult() { team('team2').resultRows.push({id:uid(), moduleName:'', resultValue:0}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateResult(id, field, value, numeric=false) { const r = team('team2').resultRows.find(x => x.id === id); if (!r) return; r[field] = numeric ? number(value) : value; saveState(); }
+function deleteResult(id) { team('team2').resultRows = team('team2').resultRows.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderTeam2SystemGraph() {
+  const rows = team('team2').systemRows;
+  const body = `<div class="grid two team2-system-layout"><div class="chart-box wide-name-chart-box">${renderWideNameChart(rows.map(r => ({label:r.systemName, value:number(r.count)})))}</div><div>${rows.map(r => `<div class="entry"><div class="grid two"><input class="input" value="${esc(r.systemName||'')}" oninput="updateSystemResult('${r.id}','systemName',this.value)"><input class="input" type="number" value="${esc(r.count||0)}" oninput="updateSystemResult('${r.id}','count',this.value,true)"></div><button style="margin-top:8px" class="btn small danger" onclick="deleteSystemResult('${r.id}')"></button></div>`).join('') || '<div class="empty">No systems yet.</div>'}</div></div>`;
+  return sectionCard('team2-system', labelInput('team2','team2.systemTitle','2.5 Name System - Graph'), 'Horizontal full-name graph to avoid cut labels.', `${addButton('Add system','addSystemResult()')}<button class="btn small" onclick="openAnyChartModal('team2System')">Bigger</button>${refreshButton('team2System')}`, body);
+}
+function addSystemResult() { team('team2').systemRows.push({id:uid(), systemName:'', count:0}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateSystemResult(id, field, value, numeric=false) { const r = team('team2').systemRows.find(x => x.id === id); if (!r) return; r[field] = numeric ? number(value) : value; saveState(); }
+function deleteSystemResult(id) { team('team2').systemRows = team('team2').systemRows.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderTeam3() {
+  const el = document.getElementById('team3'); if (!el) return;
+  el.innerHTML = `${teamPageTitle('team3', reportButtons('team3'))}${renderTeam3DailyInputs()}${renderEditableSummary('team3')}${renderTeam3Operations()}${renderFlexTable('team3','team3Log','team3.logTitle','3.3 Log Table','Compact flexible log table.')}${renderTeam3Maintenance()}${renderAvailability('team3')}${renderTnaSection('team3')}${renderPersonnelSection('team3')}`;
+}
+function renderTeam3DailyInputs() {
+  const rows = team('team3').dailyInputs;
+  const body = `<div class="routine-list">${rows.map(r => `<div class="entry routine-entry"><span class="routine-dot"></span><textarea class="auto-grow routine-line-input" oninput="updateDailyInput('${r.id}',this.value);autoGrow(this)" placeholder="Write routine daily input here">${esc(r.text)}</textarea><span class="routine-time">${esc(r.updatedAt ? 'Updated: ' + r.updatedAt : 'Created: ' + r.createdAt)}</span><div class="routine-actions"><button class="btn small danger" onclick="deleteDailyInput('${r.id}')"></button></div></div>`).join('') || '<div class="empty">No daily inputs yet.</div>'}</div>`;
+  return sectionCard('team3-daily-inputs', labelInput('team3','team3.dailyInputsTitle','3.1 Daily Inputs'), 'Routine inputs for Team 3. This is not a concern section.', addButton('Add input','addDailyInput()'), body, 'team3-routine-card');
+}
+function addDailyInput() { team('team3').dailyInputs.push({id:uid(), text:'', createdAt:nowStamp(), updatedAt:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateDailyInput(id, value) { const item = team('team3').dailyInputs.find(x => x.id === id); if (!item) return; item.text = value; item.updatedAt = nowStamp(); saveState(); }
+function deleteDailyInput(id) { team('team3').dailyInputs = team('team3').dailyInputs.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+function renderTeam3Operations() {
+  const body = `<div class="status-grid">${renderStatusGroup('group1','team3.ops1','Name')}${renderStatusGroup('group2','team3.ops2','Name 2')}</div>`;
+  return sectionCard('team3-operations', labelInput('team3','team3.operationsTitle','3.2 Operations Status'), 'Green / yellow / red visual statuses.', '', body);
+}
+function renderStatusGroup(groupKey, labelKey, fallback) {
+  const rows = team('team3').operations[groupKey] || [];
+  return `<div class="card"><div class="card-head wrap"><h3>${labelInput('team3',labelKey,fallback)}</h3>${addButton('Add status', `addStatus('${groupKey}')`)}</div>${rows.map(r => { const cur = normalizeStatus(r.status); return `<div class="status-row premium-status-row"><input class="input" value="${esc(r.name||'')}" oninput="updateStatus('${groupKey}','${r.id}','name',this.value)"><div class="status-picker"><button type="button" class="status-dot-option green ${cur==='Green'?'active':''}" onclick="setStatus('${groupKey}','${r.id}','Green')" title="Green"></button><button type="button" class="status-dot-option yellow ${cur==='Yellow'?'active':''}" onclick="setStatus('${groupKey}','${r.id}','Yellow')" title="Yellow"></button><button type="button" class="status-dot-option red ${cur==='Red'?'active':''}" onclick="setStatus('${groupKey}','${r.id}','Red')" title="Red"></button></div><button type="button" class="status-pulse ${cur.toLowerCase()}" onclick="cycleStatus('${groupKey}','${r.id}')" title="Cycle"></button><button class="btn small danger" onclick="deleteStatus('${groupKey}','${r.id}')"></button></div>`; }).join('') || '<div class="empty">No status items yet.</div>'}</div>`;
+}
+function normalizeStatus(value) { const v = String(value||'').toLowerCase(); if (v.includes('red') || v.includes('down')) return 'Red'; if (v.includes('yellow') || v.includes('partial')) return 'Yellow'; return 'Green'; }
+function addStatus(groupKey) { team('team3').operations[groupKey].push({id:uid(), name:'', status:'Green'}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateStatus(groupKey, id, field, value) { const item = team('team3').operations[groupKey].find(x => x.id === id); if (!item) return; item[field]=value; saveState(); }
+function setStatus(groupKey, id, value) { const item = team('team3').operations[groupKey].find(x => x.id === id); if (!item) return; item.status=normalizeStatus(value); saveState(); renderCurrentViewPreservingScroll(); }
+function cycleStatus(groupKey, id) { const order=['Green','Yellow','Red']; const item = team('team3').operations[groupKey].find(x => x.id === id); if (!item) return; setStatus(groupKey,id,order[(order.indexOf(normalizeStatus(item.status))+1)%3]); }
+function deleteStatus(groupKey, id) { team('team3').operations[groupKey] = team('team3').operations[groupKey].filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+function renderTeam3Maintenance() {
+  const rows = team('team3').maintenanceEntries;
+  const body = rows.map(r => `<div class="entry"><div class="entry-meta">Created: ${esc(r.createdAt)}${r.updatedAt ? ' / Updated: ' + esc(r.updatedAt) : ''}</div><textarea class="auto-grow" oninput="updateMaintenance('${r.id}',this.value);autoGrow(this)">${esc(r.text)}</textarea><button style="margin-top:8px" class="btn small danger" onclick="deleteMaintenance('${r.id}')"></button></div>`).join('') || '<div class="empty">No maintenance entries.</div>';
+  return sectionCard('team3-maintenance', labelInput('team3','team3.maintenanceTitle','3.4 Maintenance'), 'Free text maintenance records.', addButton('Add maintenance','addMaintenance()'), body);
+}
+function addMaintenance() { team('team3').maintenanceEntries.push({id:uid(), text:'', createdAt:nowStamp(), updatedAt:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateMaintenance(id, value) { const m = team('team3').maintenanceEntries.find(x => x.id === id); if (!m) return; m.text = value; m.updatedAt = nowStamp(); saveState(); }
+function deleteMaintenance(id) { team('team3').maintenanceEntries = team('team3').maintenanceEntries.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderAvailability(teamKey) {
+  const rows = team(teamKey).availability;
+  const body = `<div class="table-wrap comfort-table-wrap"><table class="comfort-table"><thead><tr><th>${thLabel(teamKey,'availability.name','Name')}</th><th>${thLabel(teamKey,'availability.status','Status / Absence')}</th><th>${thLabel(teamKey,'availability.from','From')}</th><th>${thLabel(teamKey,'availability.to','To')}</th><th>${thLabel(teamKey,'availability.notes','Notes')}</th><th class="action-col"><span class="sr-only">Delete</span></th></tr></thead><tbody>${rows.map(r => `<tr><td><input class="cell-input" value="${esc(r.name)}" oninput="updateAvailability('${teamKey}','${r.id}','name',this.value)"></td><td><input class="cell-input" value="${esc(r.status)}" oninput="updateAvailability('${teamKey}','${r.id}','status',this.value)"></td><td><input class="cell-input" type="date" value="${esc(r.from)}" oninput="updateAvailability('${teamKey}','${r.id}','from',this.value)"></td><td><input class="cell-input" type="date" value="${esc(r.to)}" oninput="updateAvailability('${teamKey}','${r.id}','to',this.value)"></td><td><input class="cell-input" value="${esc(r.notes)}" oninput="updateAvailability('${teamKey}','${r.id}','notes',this.value)"></td><td class="action-col"><button class="btn small danger" onclick="deleteAvailability('${teamKey}','${r.id}')"></button></td></tr>`).join('') || '<tr><td colspan="6"><div class="empty">No availability records.</div></td></tr>'}</tbody></table></div>`;
+  return sectionCard(`${teamKey}-availability`, labelInput(teamKey,'section.availability','People Availability / Absence'), 'Manual typing. Overview shows absence/unavailable records.', addButton('Add person', `addAvailability('${teamKey}')`), body, 'wide-table-card');
+}
+function addAvailability(teamKey) { team(teamKey).availability.push({id:uid(), name:'', status:'Available', from:todayISO(), to:todayISO(), notes:''}); saveState(); renderCurrentViewPreservingScroll(); }
+function updateAvailability(teamKey,id,field,value) { const r = team(teamKey).availability.find(x => x.id === id); if (!r) return; r[field]=value; saveState(); }
+function deleteAvailability(teamKey,id) { team(teamKey).availability = team(teamKey).availability.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+function renderTnaSection(teamKey) { return renderFlexTable(teamKey,'tna',`${teamKey}.tnaTitle`,'TNA Table','Compact TNA table. Overview shows filled entries only.'); }
+function renderPersonnelSection(teamKey) {
+  const rows = team(teamKey).personnelRows;
+  const body = `<div class="person-create-form"><input class="input" id="${teamKey}-person-id" placeholder="ID"><input class="input" id="${teamKey}-person-name" placeholder="Full name"><input class="input" id="${teamKey}-person-role" placeholder="Role"><button class="btn small primary" onclick="createPersonnel('${teamKey}')">Create Card</button></div><div class="person-grid">${rows.map(r => `<div class="person-card compact-person-card"><div class="person-card-top"><div class="person-avatar">${esc(initials(r.name))}</div><div class="person-identity"><strong>${esc(r.name||'New Employee')}</strong><span>${esc(r.role||'Role')}</span><small>ID: ${esc(r.idValue||'ID')}</small></div></div><button class="btn small danger" onclick="deletePersonnel('${teamKey}','${r.id}')"></button></div>`).join('') || '<div class="empty">No personnel cards yet.</div>'}</div>`;
+  return sectionCard(`${teamKey}-personnel`, labelInput(teamKey,`${teamKey}.personnelTitle`,'Personnel / Team Members'), 'Compact cards.', '', body, 'personnel-section');
+}
+function initials(name) { const parts = String(name||'').trim().split(/\s+/).filter(Boolean); return ((parts[0]?.[0]||'?') + (parts[1]?.[0]||'')).toUpperCase(); }
+function createPersonnel(teamKey) { const idEl=document.getElementById(`${teamKey}-person-id`), nameEl=document.getElementById(`${teamKey}-person-name`), roleEl=document.getElementById(`${teamKey}-person-role`); const row={id:uid(), idValue:safeText(idEl?.value), name:safeText(nameEl?.value), role:safeText(roleEl?.value)}; if (!row.idValue && !row.name && !row.role) { alert('Add at least one value.'); return; } team(teamKey).personnelRows.push(row); saveState(); renderCurrentViewPreservingScroll(); }
+function deletePersonnel(teamKey,id) { team(teamKey).personnelRows = team(teamKey).personnelRows.filter(x => x.id !== id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function renderOverview() {
+  const totals = calculateOverviewTotals();
+  const el = document.getElementById('overview'); if (!el) return;
+  el.innerHTML = `${pageTitle('Overview', `Selected week: ${currentWeekLabel()}`, reportButtons('overview'))}<div class="grid two section"><div class="card"><div class="card-head"><h3>Team Comparison</h3>${refreshButton('overview')}</div><div class="chart-box wide-name-chart-box">${renderWideNameChart(totals.teamRows.map(r => ({label:r.name, value:r.taskCount})))}</div></div><div class="card"><div class="card-head"><h3>Team Summaries</h3></div>${['team1','team2','team3'].map(k => `<div class="entry"><div class="card-head"><h3>${esc(teamDisplayName(k))}</h3><button class="btn small" onclick="showView('${k}')">Open</button></div><p class="subtle">${esc(team(k).weeklySummary || '')}</p></div>`).join('')}</div></div><div class="grid two section"><div class="card"><div class="card-head"><h3>Team 1 Jira Analytics Preview</h3>${refreshButton('overviewJira')}</div><div class="chart-box">${renderJiraChart()}</div></div><div class="card"><div class="card-head"><h3>Team 2 Statistics Preview</h3>${refreshButton('overviewStats')}</div><div class="chart-box">${renderTeam2StatsChart()}</div></div></div><div class="grid two section"><div class="card"><div class="card-head"><h3>Team 3 Operations Status</h3></div>${renderOverviewTeam3Status()}</div><div class="card"><div class="card-head"><h3>System Health / Recovery</h3></div>${renderOverviewSystemHealth()}</div></div><div class="grid two section"><div class="card"><div class="card-head"><h3>TNA Updates</h3></div>${renderOverviewTna()}</div><div class="card"><div class="card-head"><h3>Absence People</h3></div>${renderOverviewAbsence()}</div></div>`;
+}
+function calculateOverviewTotals() { const rows = ['team1','team2','team3'].map(k => ({name:teamDisplayName(k), taskCount:taskCount(k)})); return { teamRows:rows }; }
+function taskCount(k) { const t=team(k); if (k==='team1') return (t.tasksReceived.length+t.ongoingTasks.length+t.urgentTasks.length+t.jiraRecords.length); if (k==='team2') return getTableRows('team2','team2Requested').length+getTableRows('team2','team2Internal').length+t.statsRows.length+t.resultRows.length+t.systemRows.length; return t.dailyInputs.length+getTableRows('team3','team3Log').length+t.maintenanceEntries.length; }
+function renderOverviewTeam3Status() { const ops=[...(team('team3').operations.group1||[]),...(team('team3').operations.group2||[])]; if (!ops.length) return '<div class="empty">No Team 3 status records.</div>'; return ops.map(o => `<div class="entry"><div class="card-head"><strong>${esc(o.name||'Status item')}</strong><span class="status-pulse ${normalizeStatus(o.status).toLowerCase()}" title="${esc(normalizeStatus(o.status))}"></span></div></div>`).join(''); }
+function renderOverviewSystemHealth() { const t=team('team1'); const active=t.systemsActivity.reduce((a,b)=>a+number(b.active),0); const inactive=t.systemsActivity.reduce((a,b)=>a+number(b.inactive),0); const recovered=t.recoveredSystems.reduce((a,b)=>a+number(b.recoveredCount),0); return `<div class="grid three"><div class="mini-metric"><strong>${active}</strong><span>Machines Active</span></div><div class="mini-metric"><strong>${inactive}</strong><span>Machines Inactive</span></div><div class="mini-metric"><strong>${recovered}</strong><span>Recovered Systems</span></div></div>`; }
+function renderOverviewTna() { const items=[]; ['team1','team2','team3'].forEach(k => team(k).tnaRows.forEach(row => { const text = (state.global.tables.tna || []).map(c => row.values?.[c.id]).filter(v => safeText(v)).join(' | '); if (text) items.push(text); })); if (!items.length) return '<div class="empty">No TNA updates entered.</div>'; return items.slice(0,20).map(x => `<div class="entry"><p class="subtle">${esc(x)}</p></div>`).join(''); }
+function renderOverviewAbsence() { const items=[]; ['team1','team2','team3'].forEach(k => team(k).availability.forEach(a => { const status = String(a.status||'').toLowerCase(); const notes = String(a.notes||'').toLowerCase(); if (status && !status.includes('available') || /vacation|leave|off|sick|absence|unavailable/.test(status + ' ' + notes)) items.push(a); })); if (!items.length) return '<div class="empty">No absence records.</div>'; return items.map(a => `<div class="entry"><strong>${esc(a.name || 'Person')}</strong><p class="subtle">${esc(a.status || '')} | ${esc(a.from || '')} - ${esc(a.to || '')}${a.notes ? ' | ' + esc(a.notes) : ''}</p></div>`).join(''); }
+
+function renderTasksChart() { const data=aggregateTasksByDate(); if (!data.length || data.every(d=>!d.total&&!d.recovered)) return '<div class="empty">No task values in selected range.</div>'; return renderSvgChart(data, [{key:'total',label:'Received',color:'#60a5fa'},{key:'recovered',label:'Recovered',color:'#22c55e'}]); }
+function renderJiraChart() { const data=aggregateJiraByDate(); if (!data.length || data.every(d=>!d.total&&!d.recovered)) return '<div class="empty">No Jira values in selected range.</div>'; return renderSvgChart(data, [{key:'total',label:'Total',color:'#f59e0b'},{key:'recovered',label:'Recovered',color:'#38bdf8'}]); }
+function dateRangeArray(from,to) { const out=[]; let s=parseISODate(from), e=parseISODate(to); if (isNaN(s)||isNaN(e)||s>e) return out; while(s<=e) { out.push(formatISODate(s)); s.setDate(s.getDate()+1); } return out; }
+function aggregateTasksByDate() { const t=team('team1'); return dateRangeArray(t.jiraFrom,t.jiraTo).map(date => { let total=0,recovered=0; t.tasksReceived.forEach(r => { if (r.date===date) { total+=number(r.totalReceived); recovered+=number(r.totalRecovered); } }); return {date,total,recovered}; }); }
+function aggregateJiraByDate() { const t=team('team1'); return dateRangeArray(t.jiraFrom,t.jiraTo).map(date => { let total=0,recovered=0; t.jiraRecords.forEach(r => { if (r.from && r.to && date>=r.from && date<=r.to) { total+=number(r.totalTasks); recovered+=number(r.recoveredTasks); } }); return {date,total,recovered}; }); }
+function renderSvgChart(data, series) { const w=920,h=310,left=60,right=30,top=28,bottom=58,plotW=w-left-right,plotH=h-top-bottom; const maxY=Math.max(1,...data.flatMap(d=>series.map(s=>number(d[s.key])))); const gap=data.length>1 ? plotW/(data.length-1) : plotW; const x=i=>left+(data.length===1?plotW/2:i*gap); const y=v=>top+plotH-(number(v)/maxY)*plotH; const grid=[0,.25,.5,.75,1].map(t=>`<line x1="${left}" y1="${top+plotH-t*plotH}" x2="${w-right}" y2="${top+plotH-t*plotH}" stroke="rgba(255,255,255,.08)"/><text x="12" y="${top+plotH-t*plotH+4}" fill="#9aa8c4" font-size="11">${Math.round(maxY*t)}</text>`).join(''); const labels=data.map((d,i)=> (i%Math.ceil(data.length/7)===0 || i===data.length-1) ? `<text x="${x(i)}" y="${h-20}" text-anchor="middle" fill="#9aa8c4" font-size="10">${esc(String(d.date).slice(5))}</text>` : '').join(''); const bars = data.length <= 10; let body=''; if (bars) { const bw=Math.max(10,Math.min(32,plotW/Math.max(data.length,1)/(series.length+1))); body=data.map((d,i)=>series.map((s,si)=>{ const off=(si-(series.length-1)/2)*(bw+4); return `<rect x="${x(i)+off}" y="${y(d[s.key])}" width="${bw}" height="${top+plotH-y(d[s.key])}" rx="5" fill="${s.color}" opacity=".86"/>`; }).join('')).join(''); } else { body=series.map(s=>{ const path=data.map((d,i)=>`${i?'L':'M'} ${x(i).toFixed(1)} ${y(d[s.key]).toFixed(1)}`).join(' '); return `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="3"/>`; }).join(''); } const legend=series.map((s,i)=>`<text x="${left+i*140}" y="15" fill="${s.color}" font-size="12">${esc(s.label)}</text>`).join(''); return `<svg viewBox="0 0 ${w} ${h}" role="img">${legend}${grid}<line x1="${left}" y1="${top+plotH}" x2="${w-right}" y2="${top+plotH}" stroke="rgba(255,255,255,.2)"/>${body}${labels}</svg>`; }
+function renderTeam2StatsChart() { const rows=team('team2').statsRows; const data=rows.map(r=>({date:r.period,total:number(r.input1Received),recovered:number(r.input1Analyzed),i2r:number(r.input2Received),i2a:number(r.input2Analyzed)})); if (!data.length || data.every(d=>!d.total&&!d.recovered&&!d.i2r&&!d.i2a)) return '<div class="empty">No statistics data yet.</div>'; return renderSvgChart(data, [{key:'total',label:'Input 1 Received',color:'#60a5fa'},{key:'recovered',label:'Input 1 Analyzed',color:'#22c55e'},{key:'i2r',label:'Input 2 Received',color:'#f59e0b'},{key:'i2a',label:'Input 2 Analyzed',color:'#a78bfa'}]); }
+function renderWideNameChart(rows) { const clean=rows.filter(r=>safeText(r.label) || number(r.value)); if (!clean.length) return '<div class="empty">No chart data yet.</div>'; const max=Math.max(1,...clean.map(r=>number(r.value))); return `<div class="wide-name-chart"><div class="wide-name-chart-head"><span>Name</span><span>Value</span><span>Total</span></div>${clean.map(r=>{ const pct=Math.max(2, Math.round((number(r.value)/max)*100)); return `<div class="wide-name-row"><div class="wide-name-label">${esc(r.label || 'Unnamed')}</div><div class="wide-name-track"><div class="wide-name-fill" style="width:${pct}%"></div></div><div class="wide-name-value">${number(r.value)}</div></div>`; }).join('')}</div>`; }
+function openChartModal(kind) { const modal=document.getElementById('chartModal'); if (!modal) return; const title=kind==='jira'?getLabel('team1','chart.jiraTitle','Jira Total / Recovered'):getLabel('team1','chart.tasksTitle','Tasks Received / Recovered'); const chart=kind==='jira'?renderJiraChart():renderTasksChart(); modal.innerHTML=`<div class="chart-modal-panel"><div class="card-head wrap"><h3>${esc(title)}</h3><button class="btn small" onclick="closeChartModal()">Close</button></div><div class="chart-box large">${chart}</div></div>`; document.body.classList.add('modal-open'); }
+function openAnyChartModal(kind) { let title='Chart', chart=''; if (kind==='team2Stats') { title=getLabel('team2','team2.statsTitle','2.3 Statistics - Graph'); chart=renderTeam2StatsChart(); } if (kind==='team2Results') { title=getLabel('team2','team2.resultsTitle','2.4 Name Results - Chart'); chart=renderWideNameChart(team('team2').resultRows.map(r=>({label:r.moduleName,value:number(r.resultValue)}))); } if (kind==='team2System') { title=getLabel('team2','team2.systemTitle','2.5 Name System - Graph'); chart=renderWideNameChart(team('team2').systemRows.map(r=>({label:r.systemName,value:number(r.count)}))); } const modal=document.getElementById('chartModal'); modal.innerHTML=`<div class="chart-modal-panel"><div class="card-head wrap"><h3>${esc(title)}</h3><button class="btn small" onclick="closeChartModal()">Close</button></div><div class="chart-box large wide-name-chart-box">${chart}</div></div>`; document.body.classList.add('modal-open'); }
+function closeChartModal() { const modal=document.getElementById('chartModal'); if (modal) modal.innerHTML=''; document.body.classList.remove('modal-open'); }
+function refreshGraphs() { saveState(); renderCurrentViewPreservingScroll(); }
+
+function updateArrayItem(teamKey, arrayName, id, field, value, type) { const item=(team(teamKey)[arrayName]||[]).find(x=>x.id===id); if (!item) return; item[field]=type==='number'?number(value):value; saveState(); }
+function deleteArrayItem(teamKey, arrayName, id) { team(teamKey)[arrayName] = (team(teamKey)[arrayName]||[]).filter(x=>x.id!==id); saveState(); renderCurrentViewPreservingScroll(); }
+
+function exportJSON() { saveState(); const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'}); downloadBlob(blob, `weekly-dashboard-${exportDateStamp()}.json`); }
+function importJSON(event) { const file=event.target.files && event.target.files[0]; if (!file) return; const reader=new FileReader(); reader.onload=()=>{ try { state=migrateState(JSON.parse(reader.result)); saveState(); render(); alert('Dashboard data imported successfully.'); } catch(err) { console.warn(err); alert('Import failed. Please choose a valid dashboard JSON file.'); } }; reader.readAsText(file); event.target.value=''; }
+function printDashboard() { window.print(); }
+function exportWord(target) { const title = target === 'overview' ? 'Overview' : teamDisplayName(target); const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(title)} Report</title><style>body{font-family:Arial,sans-serif;color:#111827}h1,h2,h3{color:#0f172a}.card{border:1px solid #d1d5db;border-radius:12px;padding:14px;margin:12px 0}table{width:100%;border-collapse:collapse}th,td{border:1px solid #d1d5db;padding:7px;text-align:left}th{background:#f3f4f6}.muted{color:#6b7280}</style></head><body>${buildReportHtml(target)}</body></html>`; const blob=new Blob(['\ufeff',html],{type:'application/msword'}); downloadBlob(blob, `${cleanFilename(title)}-${exportDateStamp()}.doc`); }
+function downloadBlob(blob, filename) { const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }
+function buildReportHtml(target) { if (target==='overview') return `<h1>Weekly Dashboard Overview</h1><p class="muted">${esc(currentWeekLabel())}</p>${['team1','team2','team3'].map(k=>`<div class="card"><h2>${esc(teamDisplayName(k))}</h2><p>${esc(team(k).weeklySummary || '')}</p></div>`).join('')}`; const t=team(target); return `<h1>${esc(teamDisplayName(target))} Weekly Report</h1><p class="muted">${esc(currentWeekLabel())}</p><div class="card"><h2>Weekly Summary</h2><p>${esc(t.weeklySummary || '')}</p><h2>Team Notes</h2><p>${esc(t.notes || '')}</p></div>`; }
+
+state = loadState();
+
+// Expose functions for index.html inline handlers.
+Object.assign(window, { showView, changeWeek, goToThisWeek, selectWeekByDate, toggleTheme, exportJSON, importJSON, printDashboard, exportWord, updateTeamName, updateLabel, toggleCollapse, autoGrow, updateTeamField, addDailyTask, updateDailyTask, deleteDailyTask, addConcern, updateConcern, deleteArrayItem, addSystemActivity, updateTeam1Array, addTaskReceived, updateTaskReceived, addSmallListItem, updateArrayItem, addSystemOutcome, addJiraRecord, updateJira, t1Set, addTeamDailyEntry, updateTeamDailyEntry, deleteTeamDailyEntry, addFlexRow, deleteFlexRow, updateFlexCell, addFlexColumn, updateFlexColumn, deleteFlexColumn, addStatsRow, updateStats, deleteStats, addResult, updateResult, deleteResult, addSystemResult, updateSystemResult, deleteSystemResult, addDailyInput, updateDailyInput, deleteDailyInput, addStatus, updateStatus, setStatus, cycleStatus, deleteStatus, addMaintenance, updateMaintenance, deleteMaintenance, addAvailability, updateAvailability, deleteAvailability, createPersonnel, deletePersonnel, openChartModal, openAnyChartModal, closeChartModal, refreshGraphs, team });
+
+document.addEventListener('DOMContentLoaded', () => { render(); });
+
+</script>
+</body>
+</html>
